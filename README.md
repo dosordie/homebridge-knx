@@ -1,5 +1,16 @@
+# Looking for a maintainer!
+# Maintainer gesucht!
+
+As I have migrated my home away from homebridge plus naked KNX I am not using the software myself anymore.
+
+Also, I didn't do any JS/TS development in recent years, so I am seeing myself as unfit to continue to maintain this homebridge shim.
+
+If you are interested to take over, please message me here in GitHub or create an issue in the repository.
+
+
+
 # homebridge-knx Version 0.4 
-[![NPM version][npm-image]][npm-url] [![Downloads][downloads-image]][npm-url][![Dependency status][david-dm-image]][david-dm-url]   
+[![NPM version][npm-image]][npm-url] [![Downloads][downloads-image]][npm-url]
 
 KNX platform shim for homebridge.
 **This cannot run stand-alone in node!**
