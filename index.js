@@ -161,7 +161,9 @@ KNXPlatform.prototype.configureAccessory = function (accessory) {
     // set the accessory to reachable if plugin can currently process the accessory
     // otherwise set to false and update the reachability later by invoking
     // accessory.updateReachability()
-    accessory.updateReachability(false);
+    if (typeof accessory.updateReachability === "function") {
+        accessory.updateReachability(false);
+    }
 
     // collect the accessories
     globs.restoredAccessories.push(accessory);
