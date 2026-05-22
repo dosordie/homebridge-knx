@@ -103,6 +103,61 @@ Modifying **Min and Max**:
 }
 ```
 
+
+## Battery Service example
+Battery can be configured as a regular HomeKit service type (`"ServiceType": "Battery"`) without a custom handler.
+
+Example with only battery level (`BatteryLevel`, 0..100):
+
+```json
+{
+    "ServiceType": "Battery",
+    "ServiceName": "BYD Akku",
+    "Characteristics": [
+        {
+            "Type": "BatteryLevel",
+            "Listen": ["7/0/1"],
+            "DPT": "DPT5.001"
+        }
+    ],
+    "KNXReadRequests": ["7/0/1"],
+    "subtype": "SUB_..."
+}
+```
+
+Example with battery level, charging state and low battery state:
+
+```json
+{
+    "ServiceType": "Battery",
+    "ServiceName": "BYD Akku",
+    "Characteristics": [
+        {
+            "Type": "BatteryLevel",
+            "Listen": ["7/0/1"],
+            "DPT": "DPT5.001"
+        },
+        {
+            "Type": "ChargingState",
+            "Listen": ["7/0/2"],
+            "DPT": "DPT1"
+        },
+        {
+            "Type": "StatusLowBattery",
+            "Listen": ["7/0/3"],
+            "DPT": "DPT1"
+        }
+    ],
+    "KNXReadRequests": ["7/0/1", "7/0/2", "7/0/3"],
+    "subtype": "SUB_..."
+}
+```
+
+Notes:
+- `BatteryLevel` should use `DPT5.001` for direct 0..100 percentage values.
+- If `DPT5` (0..255) is used for a HomeKit characteristic with unit `percentage`, homebridge-knx scales KNX 0..255 to HomeKit 0..100.
+- `ChargingState` and `StatusLowBattery` work with `DPT1` (`false -> 0`, `true -> 1`).
+
 ## Handler
 New in version 0.3 of homebridge-knx is a little add-in concept, allowing additional functionality to be added without changing the big mass of the code.  
 `handler`s are defined as javascript files in `/lib/addins` and need to [follow some restrictions.](https://github.com/snowdd1/homebridge-knx/blob/plugin-2.0/handler-add-in.md)  
