@@ -74,6 +74,7 @@ function KNXPlatform(log, config, newAPI) {
     globs.knxd_port = this.platformconfig.knxd_port || 6720;
     globs.readRequestDelayMs = this.platformconfig.readRequestDelayMs || 80;
     globs.readRequestStartupDelayMs = this.platformconfig.readRequestStartupDelayMs || 3000;
+    globs.knx_phy_addr = this.platformconfig.knx_phy_addr || "15.15.15";
     globs.log = log;
     globs.knxmonitor = knxmonitor;
     /**
