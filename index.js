@@ -61,7 +61,7 @@ function KNXPlatform(log, config, newAPI) {
     globs.debug(userOpts.configPath(this.platformconfig));
     this.config = userOpts.loadConfig(this.platformconfig);
     globs.config = this.config;
-    globs.restoredAccessories = []; //plugin-2
+    globs.restoredAccessories = [];
 
     /* we should have now:
      * - knxd_ip
@@ -92,13 +92,11 @@ function KNXPlatform(log, config, newAPI) {
         port: globs.knxd_port
     });
 
-    // plugin-2 system: wait for the homebridge to finish restoring the accessories from its own persistence layer.
-    if (newAPI) {
-        newAPI.on('didFinishLaunching', function () {
-            globs.info('homebridge event didFinishLaunching');
-            this.configure();
-        }.bind(this));
-    }
+    // Homebridge dynamic platform accessory restore flow: wait until restore is complete.
+    newAPI.on('didFinishLaunching', function () {
+        globs.info('homebridge event didFinishLaunching');
+        this.configure();
+    }.bind(this));
 
 }
 
@@ -143,7 +141,7 @@ function registry(homebridgeAPI) {
     globs.webdata = getServiceData(globs);
 
     // third parameter dynamic = true
-    homebridgeAPI.registerPlatform("homebridge-knx", "KNX", KNXPlatform, true); //update signature for plugin-2
+    homebridgeAPI.registerPlatform("homebridge-knx", "KNX", KNXPlatform, true);
 }
 
 module.exports = registry;
@@ -162,23 +160,14 @@ module.exports = registry;
 KNXPlatform.prototype.configureAccessory = function (accessory) {
     console.log("Plugin - Configure Accessory: " + accessory.displayName + " --> Added to restoredAccessories[]");
 
-    // set the accessory to reachable if plugin can currently process the accessory
-    // otherwise set to false and update the reachability later by invoking
-    // accessory.updateReachability()
-    if (typeof accessory.updateReachability === "function") {
-        accessory.updateReachability(false);
-    }
-
     // collect the accessories
     globs.restoredAccessories.push(accessory);
 };
 
 /**
- * With plugin-2 system, accessories are re-created by the homebridge itself, but without all the event functions etc.
+ * Accessories are restored by Homebridge from persistence first, then reconnected here.
  *
- * We need to re-connect all our accessories to the right functions
- *
- * This is my event handler for the "didFinishLaunching" event of the newAPI
+ * This is the event handler for the "didFinishLaunching" event of the Homebridge API.
  */
 
 KNXPlatform.prototype.configure = function () {
