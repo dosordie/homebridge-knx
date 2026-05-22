@@ -72,6 +72,8 @@ function KNXPlatform(log, config, newAPI) {
     globs.knxconnection = this.platformconfig.knxconnection; // moved to platform config in homebridge UI
     globs.knxd_ip = this.platformconfig.knxd_ip;
     globs.knxd_port = this.platformconfig.knxd_port || 6720;
+    globs.readRequestDelayMs = this.platformconfig.readRequestDelayMs || 80;
+    globs.readRequestStartupDelayMs = this.platformconfig.readRequestStartupDelayMs || 3000;
     globs.log = log;
     globs.knxmonitor = knxmonitor;
     /**
