@@ -75,6 +75,7 @@ function KNXPlatform(log, config, newAPI) {
     globs.readRequestDelayMs = this.platformconfig.readRequestDelayMs || 80;
     globs.readRequestStartupDelayMs = this.platformconfig.readRequestStartupDelayMs || 3000;
     globs.knx_phy_addr = this.platformconfig.knx_phy_addr || "15.15.15";
+    globs.info("Using KNX physical address: " + globs.knx_phy_addr);
     globs.log = log;
     globs.knxmonitor = knxmonitor;
     /**
