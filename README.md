@@ -1,14 +1,7 @@
 # homebridge-knx Version 0.5 
 [![NPM version][npm-image]][npm-url] [![Downloads][downloads-image]][npm-url][![Dependency status][david-dm-image]][david-dm-url]   
-# Looking for a maintainer!
-# Maintainer gesucht!
-
-As I have migrated my home away from homebridge plus naked KNX I am not using the software myself anymore.
-
-Also, I didn't do any JS/TS development in recent years, so I am seeing myself as unfit to continue to maintain this homebridge shim.
-
-If you are interested to take over, please message me here in GitHub or create an issue in the repository.
-
+Fix Für HB 2.0.0 
+Nur mit KNX Rounting getestet, nicht per KNXd
 
 
 # homebridge-knx Version 0.4 
