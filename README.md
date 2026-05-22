@@ -1,5 +1,7 @@
-# homebridge-knx Version v0.5.0-beta.13-dosordie.1
- 
+#homebridge-knx Version v0.5.0-beta.13-dosordie.1  
+Fix Für HB 2.0.0 
+Nur mit KNX Rounting getestet, nicht per KNXd
+
 
 KNX platform shim for homebridge.
 **This cannot run stand-alone in node!**

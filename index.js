@@ -72,6 +72,10 @@ function KNXPlatform(log, config, newAPI) {
     globs.knxconnection = this.platformconfig.knxconnection; // moved to platform config in homebridge UI
     globs.knxd_ip = this.platformconfig.knxd_ip;
     globs.knxd_port = this.platformconfig.knxd_port || 6720;
+    globs.readRequestDelayMs = this.platformconfig.readRequestDelayMs || 80;
+    globs.readRequestStartupDelayMs = this.platformconfig.readRequestStartupDelayMs || 3000;
+    globs.knx_phy_addr = this.platformconfig.knx_phy_addr || "15.15.15";
+    globs.info("Using KNX physical address: " + globs.knx_phy_addr);
     globs.log = log;
     globs.knxmonitor = knxmonitor;
     /**
@@ -161,7 +165,9 @@ KNXPlatform.prototype.configureAccessory = function (accessory) {
     // set the accessory to reachable if plugin can currently process the accessory
     // otherwise set to false and update the reachability later by invoking
     // accessory.updateReachability()
-    accessory.updateReachability(false);
+    if (typeof accessory.updateReachability === "function") {
+        accessory.updateReachability(false);
+    }
 
     // collect the accessories
     globs.restoredAccessories.push(accessory);

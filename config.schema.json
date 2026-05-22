@@ -56,6 +56,12 @@
                 "condition": {
                     "functionBody": "return model.knxconnection === 'knxd';"
                 }
+            },
+            "knx_phy_addr": {
+                "type": "string",
+                "title": "KNX physical address",
+                "description": "Physical source address used by knxjs, e.g. 1.1.250",
+                "default": "15.15.15"
             }
         }
     },
