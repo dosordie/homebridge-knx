@@ -602,9 +602,16 @@ KnxProtocol.define('KNXNetHeader', {
             this.CEMI('cemi');
             break;
           default: {
+            const serviceTypeText = KnxConstants.keyText(
+              'SERVICE_TYPE',
+              hdr.service_type
+            );
+            if (hdr.service_type === undefined || serviceTypeText === undefined) {
+              break;
+            }
             KnxLog.get().warn(
               'read KNXNetHeader: unhandled serviceType = %s',
-              KnxConstants.keyText('SERVICE_TYPE', hdr.service_type)
+              serviceTypeText
             );
           }
         }
