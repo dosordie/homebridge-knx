@@ -1,5 +1,5 @@
-# homebridge-knx Version 0.5 
-[![NPM version][npm-image]][npm-url] [![Downloads][downloads-image]][npm-url][![Dependency status][david-dm-image]][david-dm-url]   
+# homebridge-knx Version v0.5.0-beta.13-dosordie.1
+ 
 
 KNX platform shim for homebridge.
 **This cannot run stand-alone in node!**
