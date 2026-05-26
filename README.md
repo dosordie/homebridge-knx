@@ -1,6 +1,9 @@
 #homebridge-knx Version v0.5.0-beta.13-dosordie.1  
-Fix Für HB 2.0.0 
+
+
+Fix Für HB 2.0.0, nicht abwärtskompatibel! 
 Nur mit KNX Rounting getestet, nicht per KNXd
+
 
 
 KNX platform shim for homebridge.
