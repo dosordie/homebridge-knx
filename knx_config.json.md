@@ -182,7 +182,6 @@ homebridge-knx creates a unique UUID for each device newly discovered in the *kn
 {
     "knxd_ip": "192.168.178.100",
     "knxd_port": 6720,
-    "AllowKillHomebridge": true,
     "Devices": [
         {
             "DeviceName": "Office",
