@@ -336,6 +336,19 @@
     height: 16px !important;
   }
 
+  .knx-codemirror-host .knx-leading-indent-space {
+    color: rgba(15, 23, 42, 0.28);
+    pointer-events: none;
+  }
+
+  .knx-indent-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    white-space: nowrap;
+  }
+
   .knx-path {
     word-break: break-all;
   }
@@ -547,6 +560,10 @@
             <div class="knx-editor-toolbar">
               <button id="reloadButton" type="button" class="btn btn-secondary">RELOAD</button>
               <button id="formatJsonButton" type="button" class="btn btn-outline-secondary d-none" disabled>FORMAT JSON</button>
+              <label class="form-check knx-indent-toggle" for="showIndentationToggle">
+                <input id="showIndentationToggle" class="form-check-input" type="checkbox">
+                <span class="form-check-label">Einrückung anzeigen</span>
+              </label>
               <button id="validateButton" type="button" class="btn btn-primary" disabled>VALIDATE</button>
             </div>
             <button id="saveButton" type="button" class="btn btn-success" disabled>SAVE</button>
@@ -595,10 +612,14 @@
     const status = document.getElementById('status');
     const reloadButton = document.getElementById('reloadButton');
     const formatJsonButton = document.getElementById('formatJsonButton');
+    const showIndentationToggle = document.getElementById('showIndentationToggle');
     const validateButton = document.getElementById('validateButton');
     const saveButton = document.getElementById('saveButton');
 
     const CODEMIRROR_BASE_PATH = './vendor/codemirror';
+    const SHOW_INDENTATION_STORAGE_KEY = 'homebridge-knx.showIndentation';
+    const INDENTATION_DOT = '\u00b7';
+
     const CODEMIRROR_ASSETS = [
       { type: 'style', url: `${CODEMIRROR_BASE_PATH}/lib/codemirror.css` },
       { type: 'script', url: `${CODEMIRROR_BASE_PATH}/lib/codemirror.js` },
@@ -615,6 +636,7 @@
     let cmEditor = null;
     let codeMirrorInitialised = false;
     let codeMirrorAvailable = false;
+    let showIndentation = localStorage.getItem(SHOW_INDENTATION_STORAGE_KEY) === 'true';
     let platformConfigLoading = false;
     let configMetadataLoading = false;
     let initialiseRunning = false;
@@ -775,6 +797,94 @@
       });
     }
 
+    function leadingSpacesForLine(line) {
+      const text = line && typeof line.text === 'string' ? line.text : '';
+      const match = text.match(/^ +/);
+      return match ? match[0].length : 0;
+    }
+
+    function createIndentDotSpan() {
+      const span = document.createElement('span');
+      span.className = 'knx-leading-indent-space';
+      span.setAttribute('aria-hidden', 'true');
+      span.textContent = INDENTATION_DOT;
+      return span;
+    }
+
+    function replaceLeadingSpacesInTextNode(node, count) {
+      let replaceCount = 0;
+      while (replaceCount < count && replaceCount < node.nodeValue.length) {
+        const character = node.nodeValue.charAt(replaceCount);
+        if (character !== ' ' && character !== '\u00a0') {
+          break;
+        }
+        replaceCount += 1;
+      }
+
+      if (replaceCount === 0) {
+        return 0;
+      }
+
+      const fragment = document.createDocumentFragment();
+      for (let index = 0; index < replaceCount; index += 1) {
+        fragment.appendChild(createIndentDotSpan());
+      }
+
+      const remainingText = node.nodeValue.slice(replaceCount);
+      if (remainingText) {
+        fragment.appendChild(document.createTextNode(remainingText));
+      }
+
+      node.parentNode.replaceChild(fragment, node);
+      return replaceCount;
+    }
+
+    function markLeadingIndentation(cm, line, element) {
+      if (!showIndentation) {
+        return;
+      }
+
+      let remainingSpaces = leadingSpacesForLine(line);
+      if (remainingSpaces === 0) {
+        return;
+      }
+
+      const visit = (node) => {
+        if (remainingSpaces === 0) {
+          return;
+        }
+
+        if (node.nodeType === Node.TEXT_NODE) {
+          remainingSpaces -= replaceLeadingSpacesInTextNode(node, remainingSpaces);
+          return;
+        }
+
+        for (const child of Array.from(node.childNodes)) {
+          visit(child);
+          if (remainingSpaces === 0) {
+            break;
+          }
+        }
+      };
+
+      visit(element);
+    }
+
+    function updateIndentationToggle() {
+      showIndentationToggle.checked = showIndentation;
+      if (cmEditor) {
+        cmEditor.refresh();
+      }
+    }
+
+    function toggleIndentationMarkers() {
+      showIndentation = showIndentationToggle.checked;
+      localStorage.setItem(SHOW_INDENTATION_STORAGE_KEY, showIndentation ? 'true' : 'false');
+      if (cmEditor) {
+        cmEditor.refresh();
+      }
+    }
+
     function editorModeForExtension(extension) {
       if (extension === '.json') {
         return { name: "javascript", json: true };
@@ -862,6 +972,8 @@
           lineWrapping: false,
           readOnly: true,
         });
+        cmEditor.on('renderLine', markLeadingIndentation);
+        updateIndentationToggle();
         window.knxCodeMirrorEditor = cmEditor;
         window.knxCodeMirrorDebug = {
           codeMirrorHost,
@@ -1264,6 +1376,8 @@
       loadConfigMetadata({ force: true });
     });
     formatJsonButton.addEventListener('click', formatJson);
+    showIndentationToggle.addEventListener('change', toggleIndentationMarkers);
+    updateIndentationToggle();
     validateButton.addEventListener('click', validateFile);
     saveButton.addEventListener('click', saveFile);
     window.addEventListener('resize', layoutEditor);
