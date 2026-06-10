@@ -199,6 +199,8 @@
       return `${url}?v=${encodeURIComponent(pluginVersion())}`;
     }
 
+    const KEEP_BROKEN_MONACO_VISIBLE = false;
+
     const EDITOR_OPTIONS = {
       automaticLayout: true,
       bracketPairColorization: { enabled: true },
@@ -224,6 +226,8 @@
     let monacoApi = null;
     let monacoEditor = null;
     let monacoInitialised = false;
+    let monacoRenderConfirmed = false;
+    let monacoRenderPromise = null;
     let fallbackActive = true;
 
     function fixScrollHeight() {
@@ -482,19 +486,8 @@
         window.knxMonacoApi = monacoApi;
         applyEditorTheme();
         layoutEditorSoon();
-
-        const rendered = await waitForMonacoRender();
-        if (!rendered) {
-          console.warn('[homebridge-knx] Monaco editor chrome was not found after layout.', {
-            editorHostClassName: editorHost.className,
-            editorHostHtml: editorHost.innerHTML.slice(0, 1000),
-            monacoEditorCount: monacoApi.editor.getEditors?.().length,
-            monacoStylesheets: Array.from(document.styleSheets)
-              .map((sheet) => sheet.href)
-              .filter((href) => href && href.includes('monaco')),
-          });
-          switchToTextareaFallback();
-        }
+        setStatus('Loaded knx_config.json. Monaco loaded, waiting for render...', 'warning');
+        monacoRenderPromise = monitorMonacoRender();
       } catch (error) {
         switchToTextareaFallback();
         console.warn('[homebridge-knx] Monaco could not be loaded; using textarea fallback.', error);
@@ -543,13 +536,19 @@
         return false;
       }
 
-      return Boolean(
-        editorHost.querySelector('.monaco-editor') ||
-        editorHost.classList.contains('monaco-editor')
-      ) && Boolean(
-        editorHost.querySelector('.line-numbers') ||
-        editorHost.querySelector('.view-lines')
-      );
+      const hasEditorShell =
+        editorHost.classList.contains('monaco-editor') ||
+        Boolean(editorHost.querySelector('.monaco-editor')) ||
+        Boolean(editorHost.querySelector('.overflow-guard')) ||
+        Boolean(editorHost.querySelector('.monaco-scrollable-element'));
+
+      const hasContent =
+        Boolean(editorHost.querySelector('.view-lines')) ||
+        Boolean(editorHost.querySelector('.view-line')) ||
+        Boolean(editorHost.querySelector('.line-numbers')) ||
+        Boolean(editorHost.querySelector('.margin'));
+
+      return hasEditorShell && hasContent;
     }
 
     function wait(ms) {
@@ -557,15 +556,77 @@
     }
 
     async function waitForMonacoRender() {
-      layoutEditorSoon();
-      await wait(100);
-      layoutEditorSoon();
-      await wait(300);
-      return isMonacoActuallyRendered();
+      const delays = [0, 50, 100, 250, 500, 1000, 2000, 3000];
+
+      for (const delay of delays) {
+        if (delay > 0) {
+          await wait(delay);
+        }
+        layoutEditorSoon();
+
+        if (isMonacoActuallyRendered()) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    function logMonacoRenderDiagnostics() {
+      console.warn('[homebridge-knx] Monaco loaded but did not render correctly.', {
+        editorHostOuterHtml: editorHost.outerHTML.slice(0, 1500),
+        monacoLayoutInfo: monacoEditor?.getLayoutInfo?.(),
+        monacoModelPreview: monacoEditor?.getModel?.()?.getValue?.()?.slice(0, 100),
+        monacoEditorCount: monacoApi?.editor?.getEditors?.().length,
+        editorHostDescendantClasses: Array.from(editorHost.querySelectorAll('*'))
+          .slice(0, 20)
+          .map((element) => element.className),
+        monacoStylesheets: Array.from(document.styleSheets)
+          .map((sheet) => sheet.href)
+          .filter((href) => href && href.includes('monaco')),
+      });
+    }
+
+    function updateLoadedFileStatus(fileName) {
+      if (monacoEditor && !fallbackActive && isMonacoActuallyRendered()) {
+        monacoRenderConfirmed = true;
+        setStatus(`Loaded ${fileName}. Monaco editor active.`, 'success');
+      } else if (monacoEditor && !fallbackActive) {
+        setStatus(`Loaded ${fileName}. Monaco loading/render pending.`, 'warning');
+      } else {
+        setStatus(`Loaded ${fileName}. Textarea fallback active.`, 'warning');
+      }
+    }
+
+    async function monitorMonacoRender() {
+      const rendered = await waitForMonacoRender();
+
+      if (rendered) {
+        monacoRenderConfirmed = true;
+        if (selectedFile && !fallbackActive) {
+          setStatus(`Loaded ${selectedFile}. Monaco editor active.`, 'success');
+        }
+        return true;
+      }
+
+      logMonacoRenderDiagnostics();
+
+      if (KEEP_BROKEN_MONACO_VISIBLE) {
+        setStatus('Loaded knx_config.json. Monaco loaded, waiting for render...', 'warning');
+        return false;
+      }
+
+      setStatus('Monaco loaded but did not render correctly. Textarea fallback active.', 'warning');
+      switchToTextareaFallback();
+      if (selectedFile) {
+        updateLoadedFileStatus(selectedFile);
+      }
+      return false;
     }
 
     function switchToMonaco() {
       fallbackActive = false;
+      monacoRenderConfirmed = false;
       editorFallback.classList.add('d-none');
       editorHost.classList.remove('d-none');
     }
@@ -592,7 +653,9 @@
       getEditor: () => monacoEditor,
       isMonacoActuallyRendered,
       layoutEditorSoon,
+      logMonacoRenderDiagnostics,
       switchToTextareaFallback,
+      waitForMonacoRender,
     };
 
     function setActiveTab(panelId) {
@@ -771,11 +834,7 @@
           updateCurrentFile(response.file);
         }
         setEditorValue(response.content || '');
-        if (monacoEditor && !fallbackActive && isMonacoActuallyRendered()) {
-          setStatus(`Loaded ${response.file.relative}. Monaco editor active.`, 'success');
-        } else {
-          setStatus(`Loaded ${response.file.relative}. Textarea fallback active.`, 'warning');
-        }
+        updateLoadedFileStatus(response.file.relative);
         setBusy(false);
       } catch (error) {
         showError(error);
