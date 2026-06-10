@@ -7,9 +7,11 @@
   }
 
   .knx-monaco-host {
+    display: block;
     width: 100%;
     height: 520px;
     min-height: 520px;
+    box-sizing: border-box;
     border: 1px solid var(--bs-border-color, #ced4da);
     border-radius: 0.375rem;
     overflow: hidden;
@@ -540,26 +542,22 @@
       return rect.width > 0 && rect.height > 0;
     }
 
+    function hasMonacoRenderedDom() {
+      return Boolean(
+        editorHost &&
+        (
+          editorHost.querySelector('.view-lines') ||
+          editorHost.querySelector('.line-numbers')
+        )
+      );
+    }
+
     function isMonacoActuallyRendered() {
       if (!monacoEditor || !editorHost || fallbackActive || editorHost.classList.contains('d-none') || !isVisibleElement(editorHost)) {
         return false;
       }
 
-      const hasEditorShell =
-        editorHost.classList.contains('monaco-editor') ||
-        Boolean(editorHost.querySelector('.monaco-editor')) ||
-        Boolean(editorHost.querySelector('.overflow-guard')) ||
-        Boolean(editorHost.querySelector('.monaco-scrollable-element'));
-
-      const hasMonacoContent =
-        Boolean(editorHost.querySelector('.view-lines')) ||
-        Boolean(editorHost.querySelector('.view-line')) ||
-        Boolean(editorHost.querySelector('.line-numbers')) ||
-        Boolean(editorHost.querySelector('.margin'));
-
-      const hasBundledEditorContent = Boolean(editorHost.querySelector('textarea.monaco-mouse-cursor-text'));
-
-      return hasEditorShell && (hasMonacoContent || hasBundledEditorContent);
+      return hasMonacoRenderedDom();
     }
 
     function wait(ms) {
@@ -598,12 +596,35 @@
       });
     }
 
+    function logMonacoRenderState() {
+      console.info('[homebridge-knx] Monaco render state', {
+        fallbackActive,
+        hasEditor: !!monacoEditor,
+        hasHost: !!editorHost,
+        hostClass: editorHost?.className,
+        hasMonacoEditor: !!editorHost?.querySelector('.monaco-editor'),
+        hasOverflowGuard: !!editorHost?.querySelector('.overflow-guard'),
+        hasViewLines: !!editorHost?.querySelector('.view-lines'),
+        hasLineNumbers: !!editorHost?.querySelector('.line-numbers'),
+        fallbackClass: editorFallback?.className,
+        layoutInfo: monacoEditor?.getLayoutInfo?.(),
+        hostHtml: editorHost?.innerHTML?.slice(0, 1000),
+      });
+    }
+
     function updateLoadedFileStatus(fileName) {
-      if (monacoEditor && !fallbackActive && isMonacoActuallyRendered()) {
+      logMonacoRenderState();
+
+      if (
+        monacoEditor &&
+        editorHost &&
+        (
+          editorHost.querySelector('.view-lines') ||
+          editorHost.querySelector('.line-numbers')
+        )
+      ) {
         monacoRenderConfirmed = true;
         setStatus(`Loaded ${fileName}. Monaco editor active.`, 'success');
-      } else if (monacoEditor && !fallbackActive) {
-        setStatus(`Loaded ${fileName}. Monaco loading/render pending.`, 'warning');
       } else {
         setStatus(`Loaded ${fileName}. Textarea fallback active.`, 'warning');
       }
@@ -614,7 +635,7 @@
 
       if (rendered) {
         monacoRenderConfirmed = true;
-        if (selectedFile && !fallbackActive) {
+        if (selectedFile && hasMonacoRenderedDom()) {
           setStatus(`Loaded ${selectedFile}. Monaco editor active.`, 'success');
         }
         return true;
@@ -665,6 +686,7 @@
       isMonacoActuallyRendered,
       layoutEditorSoon,
       logMonacoRenderDiagnostics,
+      logMonacoRenderState,
       switchToTextareaFallback,
       waitForMonacoRender,
     };
@@ -845,7 +867,32 @@
           updateCurrentFile(response.file);
         }
         setEditorValue(response.content || '');
-        updateLoadedFileStatus(response.file.relative);
+        console.info('[homebridge-knx] Monaco render state', {
+          fallbackActive,
+          hasEditor: !!monacoEditor,
+          hasHost: !!editorHost,
+          hostClass: editorHost?.className,
+          hasMonacoEditor: !!editorHost?.querySelector('.monaco-editor'),
+          hasOverflowGuard: !!editorHost?.querySelector('.overflow-guard'),
+          hasViewLines: !!editorHost?.querySelector('.view-lines'),
+          hasLineNumbers: !!editorHost?.querySelector('.line-numbers'),
+          fallbackClass: editorFallback?.className,
+          layoutInfo: monacoEditor?.getLayoutInfo?.(),
+          hostHtml: editorHost?.innerHTML?.slice(0, 1000),
+        });
+
+        if (
+          monacoEditor &&
+          editorHost &&
+          (
+            editorHost.querySelector('.view-lines') ||
+            editorHost.querySelector('.line-numbers')
+          )
+        ) {
+          setStatus(`Loaded ${response.file.relative}. Monaco editor active.`, 'success');
+        } else {
+          setStatus(`Loaded ${response.file.relative}. Textarea fallback active.`, 'warning');
+        }
         setBusy(false);
       } catch (error) {
         showError(error);
