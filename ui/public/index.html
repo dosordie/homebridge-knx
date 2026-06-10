@@ -8,16 +8,65 @@
 
   .knx-codemirror-host {
     width: 100%;
-    min-height: 520px;
-  }
-
-  .knx-codemirror-host .CodeMirror,
-  .CodeMirror {
     height: 520px;
     min-height: 520px;
+    position: relative;
+  }
+
+  .knx-codemirror-host .CodeMirror {
+    height: 520px !important;
+    min-height: 520px !important;
     border: 1px solid var(--bs-border-color, #ced4da);
     border-radius: 0.375rem;
     font-size: 0.875rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    background: #fff !important;
+  }
+
+  .knx-codemirror-host .CodeMirror-scroll {
+    height: 520px !important;
+    min-height: 520px !important;
+    overflow: auto !important;
+  }
+
+  .knx-codemirror-host .CodeMirror pre,
+  .knx-codemirror-host .CodeMirror code,
+  .knx-codemirror-host .CodeMirror-line,
+  .knx-codemirror-host pre.CodeMirror-line,
+  .knx-codemirror-host pre.CodeMirror-line-like {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 8px !important;
+    color: inherit !important;
+    font: inherit !important;
+    line-height: 1.4 !important;
+    white-space: pre !important;
+  }
+
+  .knx-codemirror-host .CodeMirror-sizer {
+    margin-bottom: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .knx-codemirror-host .CodeMirror-lines {
+    padding: 8px 0 !important;
+  }
+
+  .knx-codemirror-host .CodeMirror-code {
+    outline: none !important;
+  }
+
+  .knx-codemirror-host .CodeMirror-gutters {
+    border-right: 1px solid #ddd !important;
+    background: #f7f7f7 !important;
+  }
+
+  .knx-codemirror-host .CodeMirror-linenumber {
+    color: #999 !important;
+    padding: 0 6px 0 4px !important;
   }
 
   .knx-codemirror-host.d-none,
