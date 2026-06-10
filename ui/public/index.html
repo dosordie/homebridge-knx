@@ -1,4 +1,276 @@
 <style>
+  :root {
+    --knx-orange: #f58220;
+    --knx-orange-dark: #db6f14;
+    --knx-charcoal: #2f343b;
+    --knx-charcoal-soft: #3f454d;
+    --knx-green: #1db954;
+    --knx-green-dark: #0f8f3d;
+    --knx-panel: #ffffff;
+    --knx-muted: #6c757d;
+    --knx-border: rgba(33, 37, 41, 0.12);
+    --knx-shadow: 0 14px 34px rgba(20, 24, 31, 0.12);
+    --knx-soft-shadow: 0 8px 22px rgba(20, 24, 31, 0.08);
+  }
+
+  .knx-ui-shell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    color: #20242a;
+  }
+
+  .knx-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1rem;
+    background:
+      radial-gradient(circle at 13% 16%, rgba(245, 130, 32, 0.3), transparent 28%),
+      radial-gradient(circle at 88% 22%, rgba(29, 185, 84, 0.24), transparent 26%),
+      linear-gradient(135deg, #252a31 0%, #3b424b 56%, #1f242a 100%);
+    box-shadow: var(--knx-shadow);
+    color: #fff;
+  }
+
+  .knx-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(120deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 100%),
+      linear-gradient(30deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 100%);
+    background-size: 46px 46px;
+    opacity: 0.42;
+    pointer-events: none;
+  }
+
+  .knx-hero-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem 1.35rem;
+  }
+
+  .knx-brand-group,
+  .knx-wordmark-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .knx-homebridge-mark {
+    display: grid;
+    place-items: center;
+    width: 4.2rem;
+    height: 4.2rem;
+    flex: 0 0 auto;
+    border-radius: 1rem;
+    background: linear-gradient(145deg, #02a9f4, #0089d7);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32), 0 12px 22px rgba(0, 0, 0, 0.22);
+  }
+
+  .knx-homebridge-mark svg {
+    width: 3.15rem;
+    height: 3.15rem;
+    display: block;
+  }
+
+  .knx-eyebrow {
+    margin: 0 0 0.15rem;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .knx-hero-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.45rem, 3vw, 2.1rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .knx-hero-subtitle {
+    margin: 0.2rem 0 0;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.95rem;
+  }
+
+  .knx-wordmark-card {
+    justify-content: center;
+    min-width: min(18rem, 42vw);
+    padding: 0.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(8px);
+  }
+
+  .knx-logo-image {
+    display: block;
+    width: min(16.5rem, 38vw);
+    max-width: 100%;
+    height: auto;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.28));
+  }
+
+  .knx-tabs {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.35rem;
+    margin: 0;
+    border: 0;
+    border-radius: 0.9rem;
+    background: #eef1f4;
+    box-shadow: inset 0 0 0 1px var(--knx-border);
+  }
+
+  .knx-tabs .nav-item {
+    flex: 1 1 12rem;
+  }
+
+  .knx-tabs .nav-link {
+    width: 100%;
+    border: 0;
+    border-radius: 0.7rem;
+    background: linear-gradient(180deg, var(--knx-orange), var(--knx-orange-dark));
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    box-shadow: 0 6px 14px rgba(245, 130, 32, 0.24);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+
+  .knx-tabs .nav-link:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 9px 18px rgba(245, 130, 32, 0.28);
+  }
+
+  .knx-tabs .nav-link.active {
+    background: linear-gradient(180deg, var(--knx-charcoal-soft), var(--knx-charcoal));
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(47, 52, 59, 0.28);
+  }
+
+  .knx-card {
+    border: 1px solid var(--knx-border);
+    border-radius: 1rem;
+    box-shadow: var(--knx-soft-shadow);
+    overflow: hidden;
+  }
+
+  .knx-card .card-body {
+    padding: 1.1rem;
+  }
+
+  .knx-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .knx-card-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #252a31;
+  }
+
+  .knx-card-copy {
+    margin: 0.25rem 0 0;
+    max-width: 56rem;
+    color: var(--knx-muted);
+  }
+
+  .knx-settings-layout {
+    display: grid;
+    grid-template-columns: minmax(12rem, 0.32fr) minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .knx-settings-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.8rem;
+    border-radius: 0.9rem;
+    background: linear-gradient(180deg, #f8fafc, #eef1f4);
+    border: 1px solid var(--knx-border);
+  }
+
+  .knx-settings-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.7rem 0.75rem;
+    border-radius: 0.75rem;
+    color: #4b545e;
+    font-weight: 700;
+  }
+
+  .knx-settings-nav-item.active {
+    background: #fff;
+    color: var(--knx-charcoal);
+    box-shadow: 0 6px 14px rgba(20, 24, 31, 0.08);
+  }
+
+  .knx-settings-nav-dot {
+    width: 0.62rem;
+    height: 0.62rem;
+    border-radius: 50%;
+    background: var(--knx-orange);
+    box-shadow: 0 0 0 0.22rem rgba(245, 130, 32, 0.15);
+  }
+
+  .knx-form-section {
+    padding: 1rem;
+    border: 1px solid var(--knx-border);
+    border-radius: 0.9rem;
+    background: #fff;
+  }
+
+  .knx-form-section + .knx-form-section {
+    margin-top: 1rem;
+  }
+
+  .knx-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+    color: #252a31;
+    font-size: 0.98rem;
+    font-weight: 850;
+  }
+
+  .knx-section-heading::before {
+    content: "";
+    width: 0.35rem;
+    height: 1.25rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--knx-orange), var(--knx-green));
+  }
+
+  .knx-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .knx-field-grid .knx-span-2 {
+    grid-column: 1 / -1;
+  }
+
   .knx-editor-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -6,24 +278,58 @@
     align-items: center;
   }
 
+  .knx-editor-commandbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem;
+    border: 1px solid var(--knx-border);
+    border-radius: 0.9rem;
+    background: #f8fafc;
+  }
+
+  .knx-editor-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: end;
+    margin-bottom: 0.85rem;
+  }
+
+  .knx-path-pill {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.32rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(29, 185, 84, 0.1);
+    color: #116b31;
+    font-size: 0.78rem;
+    font-weight: 700;
+    word-break: break-all;
+  }
+
   .knx-codemirror-host {
     width: 100%;
   }
 
   .knx-codemirror-host .CodeMirror {
-    height: 500px !important;
+    height: min(62vh, 640px) !important;
     min-height: 500px !important;
-    max-height: 500px !important;
-    border: 1px solid var(--bs-border-color, #ced4da);
-    border-radius: 0.375rem;
+    max-height: 640px !important;
+    border: 1px solid rgba(33, 37, 41, 0.18);
+    border-radius: 0.9rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 22px rgba(20, 24, 31, 0.08);
     font-size: 0.875rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   }
 
   .knx-codemirror-host .CodeMirror-scroll {
-    height: 500px !important;
+    height: min(62vh, 640px) !important;
     min-height: 500px !important;
-    max-height: 500px !important;
+    max-height: 640px !important;
     overflow: auto !important;
   }
 
@@ -34,9 +340,10 @@
 
   #editorFallback {
     width: 100%;
-    height: 500px !important;
+    height: min(62vh, 640px) !important;
     min-height: 500px !important;
-    max-height: 500px !important;
+    max-height: 640px !important;
+    border-radius: 0.9rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 0.875rem;
     line-height: 16px !important;
@@ -53,36 +360,16 @@
     min-height: 16px !important;
   }
 
-  .knx-codemirror-host .cm-property {
-    color: #0451a5 !important;
-  }
-
-  .knx-codemirror-host .cm-string {
-    color: #a31515 !important;
-  }
-
-  .knx-codemirror-host .cm-number {
-    color: #098658 !important;
-  }
-
-  .knx-codemirror-host .cm-atom {
-    color: #0000ff !important;
-  }
-
-  .knx-codemirror-host .cm-keyword {
-    color: #0000ff !important;
-  }
-
+  .knx-codemirror-host .cm-property { color: #0451a5 !important; }
+  .knx-codemirror-host .cm-string { color: #a31515 !important; }
+  .knx-codemirror-host .cm-number { color: #098658 !important; }
+  .knx-codemirror-host .cm-atom,
+  .knx-codemirror-host .cm-keyword { color: #0000ff !important; }
   .knx-codemirror-host .cm-def,
   .knx-codemirror-host .cm-variable,
-  .knx-codemirror-host .cm-variable-2 {
-    color: #001080 !important;
-  }
-
+  .knx-codemirror-host .cm-variable-2 { color: #001080 !important; }
   .knx-codemirror-host .cm-punctuation,
-  .knx-codemirror-host .cm-bracket {
-    color: #444 !important;
-  }
+  .knx-codemirror-host .cm-bracket { color: #444 !important; }
 
   .knx-codemirror-host.knx-yaml-mode .cm-def,
   .knx-codemirror-host.knx-yaml-mode .cm-keyword,
@@ -91,55 +378,20 @@
     font-weight: 600 !important;
   }
 
-  .knx-codemirror-host.knx-yaml-mode .cm-string {
-    color: #a31515 !important;
-  }
-
-  .knx-codemirror-host.knx-yaml-mode .cm-number {
-    color: #098658 !important;
-  }
-
-  .knx-codemirror-host.knx-yaml-mode .cm-atom {
-    color: #0000ff !important;
-  }
-
-  .knx-codemirror-host.knx-yaml-mode .cm-meta {
-    color: #795e26 !important;
-  }
-
-  .knx-codemirror-host.knx-yaml-mode .cm-comment {
-    color: #008000 !important;
-    font-style: italic;
-  }
-
+  .knx-codemirror-host.knx-yaml-mode .cm-string { color: #a31515 !important; }
+  .knx-codemirror-host.knx-yaml-mode .cm-number { color: #098658 !important; }
+  .knx-codemirror-host.knx-yaml-mode .cm-atom { color: #0000ff !important; }
+  .knx-codemirror-host.knx-yaml-mode .cm-meta { color: #795e26 !important; }
+  .knx-codemirror-host.knx-yaml-mode .cm-comment { color: #008000 !important; font-style: italic; }
   .knx-codemirror-host.knx-yaml-mode .cm-punctuation,
-  .knx-codemirror-host.knx-yaml-mode .cm-bracket {
-    color: #444 !important;
-  }
-
-  .knx-codemirror-host.knx-json-mode .cm-string:not(.cm-property) {
-    color: #a31515 !important;
-    font-weight: 400 !important;
-  }
-
+  .knx-codemirror-host.knx-yaml-mode .cm-bracket { color: #444 !important; }
+  .knx-codemirror-host.knx-json-mode .cm-string:not(.cm-property) { color: #a31515 !important; font-weight: 400 !important; }
   .knx-codemirror-host.knx-json-mode .cm-string.cm-property,
-  .knx-codemirror-host.knx-json-mode .cm-property {
-    color: #0451a5 !important;
-    font-weight: 600 !important;
-  }
-
-  .knx-codemirror-host.knx-json-mode .cm-number {
-    color: #098658 !important;
-  }
-
-  .knx-codemirror-host.knx-json-mode .cm-atom {
-    color: #0000ff !important;
-  }
-
+  .knx-codemirror-host.knx-json-mode .cm-property { color: #0451a5 !important; font-weight: 600 !important; }
+  .knx-codemirror-host.knx-json-mode .cm-number { color: #098658 !important; }
+  .knx-codemirror-host.knx-json-mode .cm-atom { color: #0000ff !important; }
   .knx-codemirror-host.knx-json-mode .cm-bracket,
-  .knx-codemirror-host.knx-json-mode .cm-punctuation {
-    color: #444 !important;
-  }
+  .knx-codemirror-host.knx-json-mode .cm-punctuation { color: #444 !important; }
 
   .knx-codemirror-host .CodeMirror {
     font-size: 13px !important;
@@ -170,118 +422,260 @@
   .knx-path {
     word-break: break-all;
   }
+
+  .knx-loading-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    border-radius: 1rem;
+    background: rgba(248, 250, 252, 0.72);
+    backdrop-filter: blur(3px);
+  }
+
+  .knx-ui-shell.knx-is-loading .knx-loading-overlay {
+    display: flex;
+  }
+
+  .knx-loading-box {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: var(--knx-shadow);
+    color: var(--knx-charcoal);
+    font-weight: 800;
+  }
+
+  .knx-spinner {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    border: 0.32rem solid rgba(245, 130, 32, 0.2);
+    border-top-color: var(--knx-orange);
+    border-right-color: var(--knx-green);
+    animation: knx-spin 0.78s linear infinite;
+  }
+
+  @keyframes knx-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 760px) {
+    .knx-hero-inner,
+    .knx-editor-meta,
+    .knx-settings-layout,
+    .knx-field-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .knx-hero-inner {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .knx-wordmark-card {
+      justify-content: flex-start;
+    }
+
+    .knx-tabs {
+      flex-direction: column;
+    }
+
+    .knx-settings-nav {
+      display: none;
+    }
+  }
 </style>
 
-<ul class="nav nav-tabs mb-3" id="knxTabs" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active" id="plugin-settings-tab" type="button" role="tab" aria-controls="plugin-settings-panel" aria-selected="true" data-knx-tab="plugin-settings-panel">
-      Plugin Einstellungen
-    </button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="knx-editor-tab" type="button" role="tab" aria-controls="knx-editor-panel" aria-selected="false" data-knx-tab="knx-editor-panel">
-      KNX Config Editor
-    </button>
-  </li>
-</ul>
-
-<div class="tab-content">
-  <section id="plugin-settings-panel" class="tab-pane active" role="tabpanel" aria-labelledby="plugin-settings-tab">
-    <div class="card mb-3">
-      <div class="card-body">
-        <h5 class="card-title mb-3">Plugin Einstellungen</h5>
-        <p class="mb-2">
-          Edit the first Homebridge platform entry with <code>platform === "KNX"</code>. External KNX device configuration stays in the separate editor tab.
-        </p>
-        <div class="alert alert-info mb-0">
-          <strong>Homebridge restart required.</strong> Saving plugin settings updates <code>config.json</code>, but does not restart Homebridge automatically.
+<div id="knxUiShell" class="knx-ui-shell">
+  <header class="knx-hero" aria-label="homebridge-knx custom UI header">
+    <div class="knx-hero-inner">
+      <div class="knx-brand-group">
+        <div class="knx-homebridge-mark" aria-label="Homebridge">
+          <svg viewBox="0 0 64 64" role="img" aria-hidden="true" focusable="false">
+            <circle cx="32" cy="32" r="30" fill="#02a9f4"/>
+            <path d="M17 32.2 32 19l15 13.2v17.3a2.5 2.5 0 0 1-2.5 2.5h-25a2.5 2.5 0 0 1-2.5-2.5V32.2Z" fill="#fff"/>
+            <path d="M14 33.5 32 17l18 16.5" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M24 51.5V38h16v13.5" fill="#02a9f4"/>
+            <path d="M23 31h18M20 37h24M18 43h28" stroke="#02a9f4" stroke-width="2.6" stroke-linecap="round" opacity="0.95"/>
+          </svg>
+        </div>
+        <div>
+          <p class="knx-eyebrow">Homebridge Plugin UI</p>
+          <h1 class="knx-hero-title">homebridge-knx</h1>
+          <p class="knx-hero-subtitle">Plugin Einstellungen und KNX Config Editor in einer modernen Oberfläche.</p>
         </div>
       </div>
+      <div class="knx-wordmark-card" aria-label="Eigenes KNX Branding">
+        <img class="knx-logo-image" src="./knx-logo.svg" alt="Eigenes grünes KNX Config Control Logo">
+      </div>
     </div>
+  </header>
 
-    <div class="card mb-3">
-      <div class="card-body">
-        <form id="platformConfigForm" novalidate>
-          <div class="mb-3">
-            <label class="form-label" for="platformName">name</label>
-            <input id="platformName" class="form-control" type="text" autocomplete="off">
-          </div>
+  <ul class="nav nav-tabs knx-tabs" id="knxTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="plugin-settings-tab" type="button" role="tab" aria-controls="plugin-settings-panel" aria-selected="true" data-knx-tab="plugin-settings-panel">
+        Plugin Einstellungen
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="knx-editor-tab" type="button" role="tab" aria-controls="knx-editor-panel" aria-selected="false" data-knx-tab="knx-editor-panel">
+        KNX Config Editor
+      </button>
+    </li>
+  </ul>
 
-          <div class="mb-3">
-            <label class="form-label" for="platformConfigPath">config_path</label>
-            <input id="platformConfigPath" class="form-control knx-path" type="text" required autocomplete="off">
-            <div class="form-text">Path to the external JSON/YAML KNX device configuration file or directory.</div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" for="platformKnxConnection">knxconnection</label>
-            <select id="platformKnxConnection" class="form-select" required>
-              <option value="">Select connection...</option>
-              <option value="knxd">knxd</option>
-              <option value="knxjs">knxjs</option>
-            </select>
-          </div>
-
-          <div id="knxdFields">
-            <div class="mb-3">
-              <label class="form-label" for="platformKnxdIp">knxd_ip</label>
-              <input id="platformKnxdIp" class="form-control" type="text" autocomplete="off">
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label" for="platformKnxdPort">knxd_port</label>
-              <input id="platformKnxdPort" class="form-control" type="number" min="1" max="65535" step="1">
+  <div class="tab-content">
+    <section id="plugin-settings-panel" class="tab-pane active" role="tabpanel" aria-labelledby="plugin-settings-tab">
+      <div class="card knx-card mb-3">
+        <div class="card-body">
+          <div class="knx-card-header">
+            <div>
+              <h2 class="knx-card-title">Plugin Einstellungen</h2>
+              <p class="knx-card-copy">
+                Bearbeitet den ersten Homebridge-Platform-Eintrag mit <code>platform === "KNX"</code>. Die externe KNX-Gerätekonfiguration bleibt im separaten Editor-Tab.
+              </p>
             </div>
           </div>
-
-          <div class="mb-3">
-            <label class="form-label" for="platformKnxPhyAddr">knx_phy_addr</label>
-            <input id="platformKnxPhyAddr" class="form-control" type="text" autocomplete="off">
+          <div class="alert alert-info mb-0">
+            <strong>Homebridge-Neustart erforderlich.</strong> Das Speichern aktualisiert <code>config.json</code>, startet Homebridge aber nicht automatisch neu.
           </div>
-
-          <div class="knx-editor-toolbar mb-3">
-            <button id="platformReloadButton" type="button" class="btn btn-secondary">Reload</button>
-            <button id="platformSaveButton" type="submit" class="btn btn-success">Save Plugin Einstellungen</button>
-          </div>
-        </form>
-
-        <div id="platformStatus" class="alert alert-secondary" role="alert">Loading plugin settings...</div>
-      </div>
-    </div>
-  </section>
-
-  <section id="knx-editor-panel" class="tab-pane d-none" role="tabpanel" aria-labelledby="knx-editor-tab">
-    <div class="card mb-3">
-      <div class="card-body">
-        <input id="configPath" type="hidden" readonly value="Loading...">
-
-        <div id="directoryPanel" class="mb-2 d-none">
-          <label class="form-label mb-1" for="fileSelect">Configuration file</label>
-          <select id="fileSelect" class="form-select"></select>
-          <div id="directoryMessage" class="form-text"></div>
         </div>
-
-        <label class="form-label mb-1" for="editorFallback">File content</label>
-        <div id="codeMirrorHost" class="knx-codemirror-host d-none"></div>
-        <textarea id="editorFallback" class="form-control d-none" spellcheck="false" disabled></textarea>
-
-        <div class="d-flex flex-wrap justify-content-between gap-2 mt-3 mb-3">
-          <div class="knx-editor-toolbar">
-            <button id="reloadButton" type="button" class="btn btn-secondary">RELOAD</button>
-            <button id="formatJsonButton" type="button" class="btn btn-outline-secondary d-none" disabled>FORMAT JSON</button>
-            <button id="validateButton" type="button" class="btn btn-primary" disabled>VALIDATE</button>
-          </div>
-          <button id="saveButton" type="button" class="btn btn-success" disabled>SAVE</button>
-        </div>
-
-        <div id="status" class="alert alert-secondary mb-0" role="alert">Open this tab to load the KNX configuration.</div>
       </div>
+
+      <div class="card knx-card mb-3">
+        <div class="card-body">
+          <div class="knx-settings-layout">
+            <aside class="knx-settings-nav" aria-label="Einstellungsbereiche">
+              <div class="knx-settings-nav-item active"><span class="knx-settings-nav-dot"></span> Basis</div>
+              <div class="knx-settings-nav-item"><span class="knx-settings-nav-dot"></span> Verbindung</div>
+              <div class="knx-settings-nav-item"><span class="knx-settings-nav-dot"></span> Aktionen</div>
+            </aside>
+
+            <form id="platformConfigForm" novalidate>
+              <div class="knx-form-section">
+                <div class="knx-section-heading">Basis-Konfiguration</div>
+                <div class="knx-field-grid">
+                  <div>
+                    <label class="form-label" for="platformName">name</label>
+                    <input id="platformName" class="form-control" type="text" autocomplete="off">
+                  </div>
+
+                  <div>
+                    <label class="form-label" for="platformKnxPhyAddr">knx_phy_addr</label>
+                    <input id="platformKnxPhyAddr" class="form-control" type="text" autocomplete="off">
+                  </div>
+
+                  <div class="knx-span-2">
+                    <label class="form-label" for="platformConfigPath">config_path</label>
+                    <input id="platformConfigPath" class="form-control knx-path" type="text" required autocomplete="off">
+                    <div class="form-text">Pfad zur externen JSON/YAML KNX-Gerätekonfigurationsdatei oder zu einem Verzeichnis.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="knx-form-section">
+                <div class="knx-section-heading">KNX-Verbindung</div>
+                <div class="knx-field-grid">
+                  <div class="knx-span-2">
+                    <label class="form-label" for="platformKnxConnection">knxconnection</label>
+                    <select id="platformKnxConnection" class="form-select" required>
+                      <option value="">Select connection...</option>
+                      <option value="knxd">knxd</option>
+                      <option value="knxjs">knxjs</option>
+                    </select>
+                  </div>
+
+                  <div id="knxdFields" class="knx-span-2">
+                    <div class="knx-field-grid">
+                      <div>
+                        <label class="form-label" for="platformKnxdIp">knxd_ip</label>
+                        <input id="platformKnxdIp" class="form-control" type="text" autocomplete="off">
+                      </div>
+
+                      <div>
+                        <label class="form-label" for="platformKnxdPort">knxd_port</label>
+                        <input id="platformKnxdPort" class="form-control" type="number" min="1" max="65535" step="1">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="knx-form-section">
+                <div class="knx-section-heading">Aktionen</div>
+                <div class="knx-editor-toolbar mb-3">
+                  <button id="platformReloadButton" type="button" class="btn btn-secondary">Reload</button>
+                  <button id="platformSaveButton" type="submit" class="btn btn-success">Save Plugin Einstellungen</button>
+                </div>
+                <div id="platformStatus" class="alert alert-secondary mb-0" role="alert">Loading plugin settings...</div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="knx-editor-panel" class="tab-pane d-none" role="tabpanel" aria-labelledby="knx-editor-tab">
+      <div class="card knx-card mb-3">
+        <div class="card-body">
+          <div class="knx-card-header">
+            <div>
+              <h2 class="knx-card-title">KNX Config Editor</h2>
+              <p class="knx-card-copy">Großer JSON/YAML Editor für die externe KNX-Konfiguration mit Datei-Auswahl, Validierung und Speicheraktionen.</p>
+            </div>
+            <span class="knx-path-pill">Externe Konfiguration</span>
+          </div>
+
+          <input id="configPath" type="hidden" readonly value="Loading...">
+
+          <div class="knx-editor-meta">
+            <div id="directoryPanel" class="d-none">
+              <label class="form-label mb-1" for="fileSelect">Configuration file</label>
+              <select id="fileSelect" class="form-select"></select>
+              <div id="directoryMessage" class="form-text"></div>
+            </div>
+          </div>
+
+          <label class="form-label mb-1" for="editorFallback">File content</label>
+          <div id="codeMirrorHost" class="knx-codemirror-host d-none"></div>
+          <textarea id="editorFallback" class="form-control d-none" spellcheck="false" disabled></textarea>
+
+          <div class="knx-editor-commandbar mt-3 mb-3">
+            <div class="knx-editor-toolbar">
+              <button id="reloadButton" type="button" class="btn btn-secondary">RELOAD</button>
+              <button id="formatJsonButton" type="button" class="btn btn-outline-secondary d-none" disabled>FORMAT JSON</button>
+              <button id="validateButton" type="button" class="btn btn-primary" disabled>VALIDATE</button>
+            </div>
+            <button id="saveButton" type="button" class="btn btn-success" disabled>SAVE</button>
+          </div>
+
+          <div id="status" class="alert alert-secondary mb-0" role="alert">Open this tab to load the KNX configuration.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="knxLoadingOverlay" class="knx-loading-overlay" role="status" aria-live="polite" aria-hidden="true">
+    <div class="knx-loading-box">
+      <div class="knx-spinner" aria-hidden="true"></div>
+      <div id="knxLoadingText">Loading...</div>
     </div>
-  </section>
+  </div>
 </div>
 
 <script>
   (() => {
+    const knxUiShell = document.getElementById('knxUiShell');
+    const knxLoadingOverlay = document.getElementById('knxLoadingOverlay');
+    const knxLoadingText = document.getElementById('knxLoadingText');
     const tabButtons = Array.from(document.querySelectorAll('[data-knx-tab]'));
     const tabPanels = Array.from(document.querySelectorAll('.tab-pane'));
 
@@ -330,6 +724,7 @@
     let configMetadataLoading = false;
     let initialiseRunning = false;
     let initialiseRetryTimer = null;
+    let loadingOverlayDepth = 0;
 
     function pluginVersion() {
       return (
@@ -347,6 +742,23 @@
       if (window.homebridge && typeof homebridge.fixScrollHeight === 'function') {
         homebridge.fixScrollHeight();
       }
+    }
+
+    function setLoadingOverlay(visible, message = 'Loading...') {
+      if (visible) {
+        loadingOverlayDepth += 1;
+        knxLoadingText.textContent = message;
+      } else {
+        loadingOverlayDepth = Math.max(0, loadingOverlayDepth - 1);
+      }
+
+      const active = loadingOverlayDepth > 0;
+      knxUiShell.classList.toggle('knx-is-loading', active);
+      knxLoadingOverlay.setAttribute('aria-hidden', active ? 'false' : 'true');
+      if (!active) {
+        knxLoadingText.textContent = 'Loading...';
+      }
+      fixScrollHeight();
     }
 
     function requestWithTimeout(endpoint, payload, timeoutMs = 8000) {
@@ -589,9 +1001,9 @@
       if (cmEditor) {
         const wrapper = cmEditor.getWrapperElement();
         if (wrapper) {
-          wrapper.style.height = '500px';
+          wrapper.style.height = 'min(62vh, 640px)';
           wrapper.style.minHeight = '500px';
-          wrapper.style.maxHeight = '500px';
+          wrapper.style.maxHeight = '640px';
           wrapper.style.display = 'block';
           updateEditorModeClass();
         }
@@ -699,6 +1111,7 @@
       }
 
       platformConfigLoading = true;
+      setLoadingOverlay(true, 'Loading plugin settings...');
       setPlatformBusy(true);
       setPlatformStatus('Loading plugin settings...', 'secondary');
 
@@ -711,12 +1124,14 @@
       } finally {
         platformConfigLoading = false;
         setPlatformBusy(false);
+        setLoadingOverlay(false);
       }
     }
 
     async function savePlatformConfig(event) {
       event.preventDefault();
 
+      setLoadingOverlay(true, 'Saving plugin settings...');
       setPlatformBusy(true);
       setPlatformStatus('Validating and saving plugin settings...', 'secondary');
 
@@ -742,6 +1157,7 @@
         showPlatformError(error);
       } finally {
         setPlatformBusy(false);
+        setLoadingOverlay(false);
       }
     }
 
@@ -764,6 +1180,7 @@
       }
 
       configMetadataLoading = true;
+      setLoadingOverlay(true, 'Loading KNX configuration...');
       await ensureCodeEditor();
       setBusy(true);
       setStatus('Loading KNX configuration metadata...', 'secondary');
@@ -818,6 +1235,7 @@
       } finally {
         configMetadataLoading = false;
         setBusy(false);
+        setLoadingOverlay(false);
         layoutEditor();
       }
     }
@@ -830,6 +1248,7 @@
         return;
       }
 
+      setLoadingOverlay(true, 'Loading KNX file...');
       setBusy(true);
       setStatus('Loading file...', 'secondary');
 
@@ -859,11 +1278,13 @@
         showError(error);
         setBusy(false);
       } finally {
+        setLoadingOverlay(false);
         layoutEditor();
       }
     }
 
     async function validateFile() {
+      setLoadingOverlay(true, 'Validating configuration...');
       setBusy(true);
       setStatus('Validating...', 'secondary');
 
@@ -881,10 +1302,12 @@
         showError(error);
       } finally {
         setBusy(false);
+        setLoadingOverlay(false);
       }
     }
 
     async function saveFile() {
+      setLoadingOverlay(true, 'Saving KNX configuration...');
       setBusy(true);
       setStatus('Validating and saving...', 'secondary');
 
@@ -903,6 +1326,7 @@
         showError(error);
       } finally {
         setBusy(false);
+        setLoadingOverlay(false);
       }
     }
 
