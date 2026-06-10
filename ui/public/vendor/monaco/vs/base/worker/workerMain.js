@@ -1,1 +1,0 @@
-self.MonacoEnvironment = self.MonacoEnvironment || {};

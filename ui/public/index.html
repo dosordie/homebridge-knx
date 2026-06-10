@@ -6,30 +6,20 @@
     align-items: center;
   }
 
-  .knx-monaco-host {
-    display: block;
-    width: 100%;
+  .CodeMirror {
     height: 520px;
-    min-height: 520px;
-    box-sizing: border-box;
     border: 1px solid var(--bs-border-color, #ced4da);
     border-radius: 0.375rem;
-    overflow: hidden;
-    position: relative;
+    font-size: 0.875rem;
   }
 
   #editorFallback {
     width: 100%;
     min-height: 520px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 0.875rem;
     line-height: 1.35;
-    tab-size: 2;
-  }
-
-  .knx-monaco-host.d-none,
-  #editorFallback.d-none {
-    display: none !important;
+    tab-size: 4;
   }
 
   .knx-path {
@@ -150,8 +140,7 @@
         <div id="status" class="alert alert-secondary" role="alert">Open this tab to load the KNX configuration.</div>
 
         <label class="form-label" for="editorFallback">File content</label>
-        <div id="monacoEditorHost" class="knx-monaco-host d-none" aria-label="File content"></div>
-        <textarea id="editorFallback" class="form-control d-none" spellcheck="false" disabled></textarea>
+        <textarea id="editorFallback" class="form-control" spellcheck="false" disabled></textarea>
       </div>
     </div>
   </section>
@@ -178,7 +167,6 @@
     const directoryPanel = document.getElementById('directoryPanel');
     const directoryMessage = document.getElementById('directoryMessage');
     const fileSelect = document.getElementById('fileSelect');
-    const editorHost = document.getElementById('monacoEditorHost');
     const editorFallback = document.getElementById('editorFallback');
     const status = document.getElementById('status');
     const reloadButton = document.getElementById('reloadButton');
@@ -186,8 +174,23 @@
     const validateButton = document.getElementById('validateButton');
     const saveButton = document.getElementById('saveButton');
 
+    const CODEMIRROR_BASE_PATH = './vendor/codemirror';
+    const CODEMIRROR_ASSETS = [
+      { type: 'style', url: `${CODEMIRROR_BASE_PATH}/lib/codemirror.css` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/lib/codemirror.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/mode/javascript/javascript.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/mode/yaml/yaml.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/addon/edit/matchbrackets.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/addon/display/placeholder.js` },
+    ];
 
-    const MONACO_BASE_PATH = './vendor/monaco/vs';
+    let mode = null;
+    let selectedFile = null;
+    let currentExtension = '';
+    let editorLoaded = false;
+    let cmEditor = null;
+    let codeMirrorInitialised = false;
+    let codeMirrorAvailable = false;
 
     function pluginVersion() {
       return (
@@ -200,37 +203,6 @@
     function withCacheBust(url) {
       return `${url}?v=${encodeURIComponent(pluginVersion())}`;
     }
-
-    const KEEP_BROKEN_MONACO_VISIBLE = false;
-
-    const EDITOR_OPTIONS = {
-      automaticLayout: true,
-      bracketPairColorization: { enabled: true },
-      folding: true,
-      glyphMargin: true,
-      insertSpaces: true,
-      lineDecorationsWidth: 12,
-      lineNumbers: 'on',
-      matchBrackets: 'always',
-      minimap: { enabled: false },
-      renderLineHighlight: 'all',
-      renderValidationDecorations: 'on',
-      roundedSelection: true,
-      scrollBeyondLastLine: false,
-      tabSize: 4,
-      wordWrap: 'off',
-    };
-
-    let mode = null;
-    let selectedFile = null;
-    let currentExtension = '';
-    let editorLoaded = false;
-    let monacoApi = null;
-    let monacoEditor = null;
-    let monacoInitialised = false;
-    let monacoRenderConfirmed = false;
-    let monacoRenderPromise = null;
-    let fallbackActive = true;
 
     function fixScrollHeight() {
       if (window.homebridge && typeof homebridge.fixScrollHeight === 'function') {
@@ -265,8 +237,8 @@
       validateButton.disabled = busy || !selectedFile;
       saveButton.disabled = busy || !selectedFile;
       editorFallback.disabled = busy || !selectedFile;
-      if (monacoEditor) {
-        monacoEditor.updateOptions({ readOnly: busy || !selectedFile });
+      if (cmEditor) {
+        cmEditor.setOption('readOnly', busy || !selectedFile);
       }
       updateFormatJsonVisibility();
     }
@@ -301,61 +273,16 @@
       fixScrollHeight();
     }
 
-    function detectTheme() {
-      const themeHints = [
-        document.documentElement.getAttribute('data-bs-theme'),
-        document.body.getAttribute('data-bs-theme'),
-        document.documentElement.className,
-        document.body.className,
-        window.localStorage && (localStorage.getItem('theme') || localStorage.getItem('homebridge.theme')),
-      ].filter(Boolean).join(' ').toLowerCase();
-
-      if (themeHints.includes('dark')) {
-        return 'vs-dark';
-      }
-
-      if (themeHints.includes('light')) {
-        return 'vs-light';
-      }
-
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'vs-dark' : 'vs-light';
-    }
-
-    function applyEditorTheme() {
-      if (monacoApi) {
-        monacoApi.editor.setTheme(detectTheme());
-      }
-    }
-
-    function getParentMonaco() {
-      try {
-        return window.parent && window.parent !== window && window.parent.monaco ? window.parent.monaco : null;
-      } catch (error) {
-        console.info('[homebridge-knx] Parent Monaco is not accessible from the plugin iframe:', error.message);
-        return null;
-      }
-    }
-
-    function getExistingMonaco() {
-      if (window.monaco && window.monaco.editor) {
-        console.info('[homebridge-knx] Reusing Monaco from window.monaco.');
-        return window.monaco;
-      }
-
-      const parentMonaco = getParentMonaco();
-      if (parentMonaco && parentMonaco.editor) {
-        console.info('[homebridge-knx] Reusing Monaco from parent.monaco.');
-        return parentMonaco;
-      }
-
-      return null;
-    }
-
     function loadScript(src) {
       return new Promise((resolve, reject) => {
+        if (document.querySelector(`script[data-knx-src="${src}"]`)) {
+          resolve();
+          return;
+        }
         const script = document.createElement('script');
-        script.src = src;
-        script.async = true;
+        script.src = withCacheBust(src);
+        script.async = false;
+        script.dataset.knxSrc = src;
         script.onload = resolve;
         script.onerror = () => reject(new Error(`Unable to load script ${src}.`));
         document.head.appendChild(script);
@@ -364,91 +291,35 @@
 
     function loadStylesheet(href) {
       return new Promise((resolve, reject) => {
-        if ([...document.styleSheets].some((s) => s.href && s.href.includes(href.replace('./', '')))) {
+        if (document.querySelector(`link[data-knx-href="${href}"]`)) {
           resolve();
           return;
         }
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = withCacheBust(href);
+        link.dataset.knxHref = href;
         link.onload = resolve;
         link.onerror = () => reject(new Error(`Unable to load stylesheet ${href}`));
         document.head.appendChild(link);
       });
     }
 
-    let monacoStylesheetPromise = null;
-
-    async function loadMonacoStylesheet() {
-      if (!monacoStylesheetPromise) {
-        const href = `${MONACO_BASE_PATH}/editor/editor.main.css`;
-        monacoStylesheetPromise = loadStylesheet(href).then(() => {
-          console.info(`[homebridge-knx] Monaco CSS loaded from ${href}`);
-        });
-      }
-
-      await monacoStylesheetPromise;
-    }
-
-    async function loadBundledMonaco() {
-      window.MonacoEnvironment = {
-        ...(window.MonacoEnvironment || {}),
-        getWorkerUrl: () => `${MONACO_BASE_PATH}/base/worker/workerMain.js`,
-      };
-
-      if (!window.require || typeof window.require.config !== 'function') {
-        await loadScript(withCacheBust(`${MONACO_BASE_PATH}/loader.js`));
-      }
-
-      await loadMonacoStylesheet();
-
-      if (!window.require || typeof window.require.config !== 'function') {
-        throw new Error('Bundled Monaco AMD loader did not expose window.require.config.');
-      }
-
-      window.require.config({ paths: { vs: MONACO_BASE_PATH } });
-
-      return new Promise((resolve, reject) => {
-        window.require(
-          ['vs/editor/editor.main'],
-          () => {
-            if (window.monaco && window.monaco.editor) {
-              console.info(`[homebridge-knx] Monaco editor loaded from ${MONACO_BASE_PATH}.`);
-              resolve(window.monaco);
-              return;
-            }
-
-            reject(new Error('Bundled Monaco loaded, but window.monaco.editor is unavailable.'));
-          },
-          (error) => reject(error instanceof Error ? error : new Error(String(error)))
-        );
-      });
-    }
-
-    function monacoHasLanguage(languageId) {
-      return Boolean(monacoApi && monacoApi.languages && monacoApi.languages.getLanguages().some((language) => language.id === languageId));
-    }
-
-    function languageForExtension(extension) {
+    function editorModeForExtension(extension) {
       if (extension === '.json') {
-        return 'json';
+        return 'application/json';
       }
 
-      if ((extension === '.yaml' || extension === '.yml') && monacoHasLanguage('yaml')) {
+      if (extension === '.yaml' || extension === '.yml') {
         return 'yaml';
       }
 
-      return 'plaintext';
+      return 'text/plain';
     }
 
     function updateEditorLanguage() {
-      if (!monacoEditor || !monacoApi) {
-        return;
-      }
-
-      const model = monacoEditor.getModel();
-      if (model) {
-        monacoApi.editor.setModelLanguage(model, languageForExtension(currentExtension));
+      if (cmEditor) {
+        cmEditor.setOption('mode', editorModeForExtension(currentExtension));
       }
     }
 
@@ -458,238 +329,78 @@
     }
 
     async function ensureCodeEditor() {
-      if (monacoInitialised) {
+      if (codeMirrorInitialised) {
         return;
       }
 
-      monacoInitialised = true;
+      codeMirrorInitialised = true;
 
       try {
-        await loadMonacoStylesheet();
-
-        monacoApi = getExistingMonaco();
-        if (!monacoApi || !monacoApi.editor) {
-          monacoApi = await loadBundledMonaco();
+        for (const asset of CODEMIRROR_ASSETS) {
+          if (asset.type === 'style') {
+            await loadStylesheet(asset.url);
+          } else {
+            await loadScript(asset.url);
+          }
         }
 
-        if (!monacoApi || !monacoApi.editor) {
-          throw new Error('Monaco API is unavailable after checking existing and bundled sources.');
+        if (!window.CodeMirror || typeof window.CodeMirror.fromTextArea !== 'function') {
+          throw new Error('CodeMirror did not expose CodeMirror.fromTextArea.');
         }
 
-        switchToMonaco();
-        monacoEditor = monacoApi.editor.create(editorHost, {
-          ...EDITOR_OPTIONS,
-          language: languageForExtension(currentExtension),
+        cmEditor = window.CodeMirror.fromTextArea(editorFallback, {
+          lineNumbers: true,
+          mode: editorModeForExtension(currentExtension),
+          matchBrackets: true,
+          indentUnit: 4,
+          tabSize: 4,
+          indentWithTabs: false,
+          lineWrapping: false,
           readOnly: true,
-          theme: detectTheme(),
-          value: editorFallback.value || '',
         });
-        window.knxMonacoEditor = monacoEditor;
-        window.knxMonacoApi = monacoApi;
-        applyEditorTheme();
-        layoutEditorSoon();
-        setStatus('Loaded knx_config.json. Monaco loaded, waiting for render...', 'warning');
-        monacoRenderPromise = monitorMonacoRender();
+        window.knxCodeMirrorEditor = cmEditor;
+        codeMirrorAvailable = true;
+        refreshEditorSoon();
       } catch (error) {
-        switchToTextareaFallback();
-        console.warn('[homebridge-knx] Monaco could not be loaded; using textarea fallback.', error);
+        codeMirrorAvailable = false;
+        cmEditor = null;
+        editorFallback.classList.remove('d-none');
+        console.warn('[homebridge-knx] CodeMirror could not be loaded; using textarea fallback.', error);
       }
     }
 
     function getEditorValue() {
-      return monacoEditor ? monacoEditor.getValue() : editorFallback.value;
+      return cmEditor ? cmEditor.getValue() : editorFallback.value;
     }
 
     function setEditorValue(value) {
       const nextValue = value || '';
-      editorFallback.value = nextValue;
-      if (monacoEditor) {
-        monacoEditor.setValue(nextValue);
+      if (cmEditor) {
+        cmEditor.setValue(nextValue);
+      } else {
+        editorFallback.value = nextValue;
       }
     }
 
-    function layoutEditorSoon() {
-      if (!monacoEditor) {
-        fixScrollHeight();
-        return;
+    function refreshEditorSoon() {
+      if (cmEditor && typeof cmEditor.refresh === 'function') {
+        requestAnimationFrame(() => cmEditor.refresh());
+        setTimeout(() => cmEditor.refresh(), 50);
       }
-
-      const layoutCurrentEditor = () => {
-        if (monacoEditor) {
-          monacoEditor.layout();
-        }
-      };
-
-      requestAnimationFrame(() => {
-        layoutCurrentEditor();
-        fixScrollHeight();
-      });
-      setTimeout(layoutCurrentEditor, 50);
-      setTimeout(layoutCurrentEditor, 250);
-      setTimeout(layoutCurrentEditor, 1000);
+      fixScrollHeight();
     }
 
     function layoutEditor() {
-      layoutEditorSoon();
-    }
-
-    function isVisibleElement(element) {
-      if (!element) {
-        return false;
-      }
-
-      const rect = element.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    }
-
-    function hasMonacoRenderedDom() {
-      return Boolean(
-        editorHost &&
-        (
-          editorHost.querySelector('.view-lines') ||
-          editorHost.querySelector('.line-numbers')
-        )
-      );
-    }
-
-    function isMonacoActuallyRendered() {
-      if (!monacoEditor || !editorHost || fallbackActive || editorHost.classList.contains('d-none') || !isVisibleElement(editorHost)) {
-        return false;
-      }
-
-      return hasMonacoRenderedDom();
-    }
-
-    function wait(ms) {
-      return new Promise((resolve) => setTimeout(resolve, ms));
-    }
-
-    async function waitForMonacoRender() {
-      const delays = [0, 50, 100, 250, 500, 1000, 2000, 3000];
-
-      for (const delay of delays) {
-        if (delay > 0) {
-          await wait(delay);
-        }
-        layoutEditorSoon();
-
-        if (isMonacoActuallyRendered()) {
-          return true;
-        }
-      }
-
-      return false;
-    }
-
-    function logMonacoRenderDiagnostics() {
-      console.warn('[homebridge-knx] Monaco loaded but did not render correctly.', {
-        editorHostOuterHtml: editorHost.outerHTML.slice(0, 1500),
-        monacoLayoutInfo: monacoEditor?.getLayoutInfo?.(),
-        monacoModelPreview: monacoEditor?.getModel?.()?.getValue?.()?.slice(0, 100),
-        monacoEditorCount: monacoApi?.editor?.getEditors?.().length,
-        editorHostDescendantClasses: Array.from(editorHost.querySelectorAll('*'))
-          .slice(0, 20)
-          .map((element) => element.className),
-        monacoStylesheets: Array.from(document.styleSheets)
-          .map((sheet) => sheet.href)
-          .filter((href) => href && href.includes('monaco')),
-      });
-    }
-
-    function logMonacoRenderState() {
-      console.info('[homebridge-knx] Monaco render state', {
-        fallbackActive,
-        hasEditor: !!monacoEditor,
-        hasHost: !!editorHost,
-        hostClass: editorHost?.className,
-        hasMonacoEditor: !!editorHost?.querySelector('.monaco-editor'),
-        hasOverflowGuard: !!editorHost?.querySelector('.overflow-guard'),
-        hasViewLines: !!editorHost?.querySelector('.view-lines'),
-        hasLineNumbers: !!editorHost?.querySelector('.line-numbers'),
-        fallbackClass: editorFallback?.className,
-        layoutInfo: monacoEditor?.getLayoutInfo?.(),
-        hostHtml: editorHost?.innerHTML?.slice(0, 1000),
-      });
+      refreshEditorSoon();
     }
 
     function updateLoadedFileStatus(fileName) {
-      logMonacoRenderState();
-
-      if (
-        monacoEditor &&
-        editorHost &&
-        (
-          editorHost.querySelector('.view-lines') ||
-          editorHost.querySelector('.line-numbers')
-        )
-      ) {
-        monacoRenderConfirmed = true;
-        setStatus(`Loaded ${fileName}. Monaco editor active.`, 'success');
+      if (codeMirrorAvailable && cmEditor) {
+        setStatus(`Loaded ${fileName}. CodeMirror editor active.`, 'success');
       } else {
         setStatus(`Loaded ${fileName}. Textarea fallback active.`, 'warning');
       }
     }
-
-    async function monitorMonacoRender() {
-      const rendered = await waitForMonacoRender();
-
-      if (rendered) {
-        monacoRenderConfirmed = true;
-        if (selectedFile && hasMonacoRenderedDom()) {
-          setStatus(`Loaded ${selectedFile}. Monaco editor active.`, 'success');
-        }
-        return true;
-      }
-
-      logMonacoRenderDiagnostics();
-
-      if (KEEP_BROKEN_MONACO_VISIBLE) {
-        setStatus('Loaded knx_config.json. Monaco loaded, waiting for render...', 'warning');
-        return false;
-      }
-
-      setStatus('Monaco loaded but did not render correctly. Textarea fallback active.', 'warning');
-      switchToTextareaFallback();
-      if (selectedFile) {
-        updateLoadedFileStatus(selectedFile);
-      }
-      return false;
-    }
-
-    function switchToMonaco() {
-      fallbackActive = false;
-      monacoRenderConfirmed = false;
-      editorFallback.classList.add('d-none');
-      editorHost.classList.remove('d-none');
-    }
-
-    function switchToTextareaFallback() {
-      fallbackActive = true;
-
-      if (monacoEditor) {
-        try {
-          monacoEditor.dispose();
-        } catch (error) {
-          console.warn('[homebridge-knx] Unable to dispose Monaco editor:', error);
-        }
-        monacoEditor = null;
-        window.knxMonacoEditor = null;
-      }
-
-      editorHost.classList.add('d-none');
-      editorFallback.classList.remove('d-none');
-    }
-
-    window.knxMonacoDebug = {
-      editorHost,
-      getEditor: () => monacoEditor,
-      isMonacoActuallyRendered,
-      layoutEditorSoon,
-      logMonacoRenderDiagnostics,
-      logMonacoRenderState,
-      switchToTextareaFallback,
-      waitForMonacoRender,
-    };
 
     function setActiveTab(panelId) {
       for (const button of tabButtons) {
@@ -709,7 +420,7 @@
           editorLoaded = true;
           loadConfigMetadata();
         } else {
-          layoutEditorSoon();
+          refreshEditorSoon();
         }
       }
 
@@ -722,7 +433,6 @@
       }
 
       updateKnxdVisibility();
-      observeThemeChanges();
       await loadPlatformConfig();
     }
 
@@ -867,33 +577,9 @@
           updateCurrentFile(response.file);
         }
         setEditorValue(response.content || '');
-        console.info('[homebridge-knx] Monaco render state', {
-          fallbackActive,
-          hasEditor: !!monacoEditor,
-          hasHost: !!editorHost,
-          hostClass: editorHost?.className,
-          hasMonacoEditor: !!editorHost?.querySelector('.monaco-editor'),
-          hasOverflowGuard: !!editorHost?.querySelector('.overflow-guard'),
-          hasViewLines: !!editorHost?.querySelector('.view-lines'),
-          hasLineNumbers: !!editorHost?.querySelector('.line-numbers'),
-          fallbackClass: editorFallback?.className,
-          layoutInfo: monacoEditor?.getLayoutInfo?.(),
-          hostHtml: editorHost?.innerHTML?.slice(0, 1000),
-        });
-
-        if (
-          monacoEditor &&
-          editorHost &&
-          (
-            editorHost.querySelector('.view-lines') ||
-            editorHost.querySelector('.line-numbers')
-          )
-        ) {
-          setStatus(`Loaded ${response.file.relative}. Monaco editor active.`, 'success');
-        } else {
-          setStatus(`Loaded ${response.file.relative}. Textarea fallback active.`, 'warning');
-        }
+        updateLoadedFileStatus(response.file.relative);
         setBusy(false);
+        setTimeout(() => refreshEditorSoon(), 50);
       } catch (error) {
         showError(error);
         setBusy(false);
@@ -951,19 +637,6 @@
         layoutEditor();
       } catch (error) {
         showError(new Error(`Unable to format JSON: ${error.message}`));
-      }
-    }
-
-    function observeThemeChanges() {
-      const observer = new MutationObserver(applyEditorTheme);
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-bs-theme'] });
-      observer.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-bs-theme'] });
-
-      if (window.matchMedia) {
-        const colorScheme = window.matchMedia('(prefers-color-scheme: dark)');
-        if (typeof colorScheme.addEventListener === 'function') {
-          colorScheme.addEventListener('change', applyEditorTheme);
-        }
       }
     }
 

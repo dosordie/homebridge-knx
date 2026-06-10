@@ -1,12 +1,11 @@
 {
     "name": "homebridge-knx",
-    "version": "0.5.0-beta.13-dosordie.4",
+    "version": "0.5.0-beta.13-dosordie.5",
     "description": "Homebridge KNX plugin fork with Homebridge 2.x and knxjs fixes.",
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "start": "echo \"Error: configure and run homebridge to start\" && exit 1",
-        "copy-monaco": "node scripts/copy-monaco-assets.js"
+        "start": "echo \"Error: configure and run homebridge to start\" && exit 1"
     },
     "engines": {
         "node": ">14.0.0",
@@ -84,8 +83,5 @@
     "bugs": {
         "url": "https://github.com/dosordie/homebridge-knx/issues"
     },
-    "homepage": "https://github.com/dosordie/homebridge-knx",
-    "devDependencies": {
-        "monaco-editor": "^0.55.1"
-    }
+    "homepage": "https://github.com/dosordie/homebridge-knx"
 }
