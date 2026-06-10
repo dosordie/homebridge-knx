@@ -6,7 +6,7 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "start": "echo \"Error: configure and run homebridge to start\" && exit 1",
-        "postinstall": "node scripts/copy-monaco-assets.js"
+        "copy-monaco": "node scripts/copy-monaco-assets.js"
     },
     "engines": {
         "node": ">14.0.0",
@@ -31,8 +31,7 @@
         "debug": "^4.3.4",
         "eibd": "^0.5.1",
         "js-yaml": "^4.1.0",
-        "knx": "github:dosordie/knx#master",
-        "monaco-editor": "^0.55.1"
+        "knx": "github:dosordie/knx#master"
     },
     "author": {
         "name": "Raoul",
@@ -85,5 +84,8 @@
     "bugs": {
         "url": "https://github.com/dosordie/homebridge-knx/issues"
     },
-    "homepage": "https://github.com/dosordie/homebridge-knx"
+    "homepage": "https://github.com/dosordie/homebridge-knx",
+    "devDependencies": {
+        "monaco-editor": "^0.55.1"
+    }
 }
