@@ -1,4 +1,13 @@
-(function (CodeMirror) {
-  if (!CodeMirror) return;
-  CodeMirror.defineOption('placeholder', '', function () {});
-})(window.CodeMirror);
+// Placeholder option hook compatible with CodeMirror 5.
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") mod(require("../../lib/codemirror"));
+  else if (typeof define == "function" && define.amd) define(["../../lib/codemirror"], mod);
+  else mod(CodeMirror);
+})(function(CodeMirror) {
+  "use strict";
+
+  CodeMirror.defineOption("placeholder", "", function(cm, val) {
+    var wrapper = cm && cm.getWrapperElement && cm.getWrapperElement();
+    if (wrapper) wrapper.setAttribute("data-placeholder", val || "");
+  });
+});
