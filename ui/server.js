@@ -258,7 +258,8 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
 
         try {
             const backupPath = await this.createBackup(target.realPath);
-            await this.atomicWrite(target.realPath, content);
+            await this.writeExternalConfigFile(target.realPath, content);
+            await this.repairExternalConfigPermissions(target.realPath);
             await this.pruneBackups(target.realPath);
 
             this.log(`Saved KNX config file: ${target.realPath}`);
@@ -481,6 +482,34 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
 
         await fsp.writeFile(temporaryPath, content, { encoding: 'utf8', mode: 0o600 });
         await fsp.rename(temporaryPath, filePath);
+    }
+
+    async writeExternalConfigFile(filePath, content) {
+        // Keep the existing inode so file-specific ACLs/default ACL inheritance are not discarded.
+        await fsp.writeFile(filePath, content, { encoding: 'utf8', mode: 0o664 });
+    }
+
+    async repairExternalConfigPermissions(filePath) {
+        await this.inheritDirectoryGroupIfPossible(filePath);
+        await fsp.chmod(filePath, 0o664);
+    }
+
+    async inheritDirectoryGroupIfPossible(filePath) {
+        const directory = path.dirname(filePath);
+        const [fileStat, directoryStat] = await Promise.all([
+            fsp.stat(filePath),
+            fsp.stat(directory),
+        ]);
+
+        if (fileStat.gid === directoryStat.gid) {
+            return;
+        }
+
+        try {
+            await fsp.chown(filePath, fileStat.uid, directoryStat.gid);
+        } catch (error) {
+            this.log(`Unable to inherit group for KNX config file ${filePath}: ${error.message}`);
+        }
     }
 
     async pruneBackups(filePath) {
