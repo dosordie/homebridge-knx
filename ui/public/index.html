@@ -464,6 +464,58 @@
       updateKnxdVisibility();
     }
 
+    function applyPlatformDefaults() {
+      platformName.value ||= 'KNX';
+      platformConfigPath.value ||= '/var/lib/homebridge/knx';
+      platformKnxConnection.value ||= 'knxd';
+      platformKnxdPort.value ||= 6720;
+      updateKnxdVisibility();
+    }
+
+    function applyPlatformConfig(config = {}) {
+      platformName.value = config.name || '';
+      platformConfigPath.value = config.config_path || '';
+      platformKnxConnection.value = config.knxconnection === 'knxjs' ? 'knxjs' : 'knxd';
+      platformKnxdIp.value = config.knxd_ip || '';
+      platformKnxdPort.value = config.knxd_port || 6720;
+      platformKnxPhyAddr.value = config.knx_phy_addr || '';
+      applyPlatformDefaults();
+    }
+
+    async function applyHomebridgePluginConfigFallback() {
+      if (!window.homebridge || typeof homebridge.getPluginConfig !== 'function') {
+        return false;
+      }
+
+      try {
+        const pluginConfig = await Promise.race([
+          Promise.resolve(homebridge.getPluginConfig()),
+          new Promise((resolve) => setTimeout(() => resolve(null), 1000)),
+        ]);
+        const platforms = Array.isArray(pluginConfig)
+          ? pluginConfig
+          : pluginConfig && Array.isArray(pluginConfig.platforms)
+            ? pluginConfig.platforms
+            : [];
+        const config = platforms.find((entry) => entry && entry.platform === 'KNX');
+
+        if (!config) {
+          return false;
+        }
+
+        applyPlatformConfig(config);
+        return true;
+      } catch (error) {
+        console.debug('[homebridge-knx-ui] homebridge.getPluginConfig fallback failed', error);
+        return false;
+      }
+    }
+
+    function isRequestTimeoutError(error, endpoint) {
+      const message = String(error && (error.message || error));
+      return message === `Request timeout: ${endpoint}` || message.includes(`Request timeout: ${endpoint}`);
+    }
+
     function setBusy(busy) {
       reloadButton.disabled = busy;
       formatJsonButton.disabled = busy || !selectedFile || currentExtension !== '.json';
@@ -702,7 +754,8 @@
       }
 
       if (panelId === 'plugin-settings-panel') {
-        await loadPlatformConfig({ force: true, generation });
+        applyPlatformDefaults();
+        loadPlatformConfig({ force: true, generation });
       }
 
       if (panelId === 'knx-editor-panel') {
@@ -756,7 +809,7 @@
           homebridge.disableSaveButton();
         }
 
-        updateKnxdVisibility();
+        applyPlatformDefaults();
         await loadPlatformConfig({ force: true, generation });
         if (!isCurrentLifecycle(generation)) return;
 
@@ -789,8 +842,16 @@
       }
 
       platformConfigLoading = true;
+      applyPlatformDefaults();
       setPlatformBusy(true);
       setPlatformStatus('Loading plugin settings...', 'secondary');
+      await applyHomebridgePluginConfigFallback();
+
+      if (!isCurrentLifecycle(generation)) {
+        platformConfigLoading = false;
+        setPlatformBusy(false);
+        return;
+      }
 
       const { requestId, promise } = startRequestWithTimeout('/platform-config/load');
       latestPlatformLoadRequestId = requestId;
@@ -799,13 +860,7 @@
         const response = await promise;
         if (requestId !== latestPlatformLoadRequestId || !isCurrentLifecycle(generation)) return;
 
-        const config = response.config || {};
-        platformName.value = config.name || '';
-        platformConfigPath.value = config.config_path || '';
-        platformKnxConnection.value = config.knxconnection === 'knxjs' ? 'knxjs' : 'knxd';
-        platformKnxdIp.value = config.knxd_ip || '';
-        platformKnxdPort.value = config.knxd_port || 6720;
-        platformKnxPhyAddr.value = config.knx_phy_addr || '';
+        applyPlatformConfig(response.config || {});
         setPlatformStatus('Plugin settings loaded.', 'success');
       } catch (error) {
         if (isStaleBridgeError(error)) {
@@ -813,6 +868,11 @@
           return;
         }
         if (requestId !== latestPlatformLoadRequestId || !isCurrentLifecycle(generation)) return;
+        if (isRequestTimeoutError(error, '/platform-config/load')) {
+          applyPlatformDefaults();
+          setPlatformStatus('Plugin settings could not be loaded automatically. Server responded but Homebridge UI bridge timed out. Use Reload or press F5.', 'warning');
+          return;
+        }
         showPlatformError(error);
       } finally {
         if (requestId === latestPlatformLoadRequestId && isCurrentLifecycle(generation)) {
@@ -1106,6 +1166,7 @@
     platformForm.addEventListener('submit', savePlatformConfig);
     platformReloadButton.addEventListener('click', () => {
       platformConfigLoading = false;
+      applyPlatformDefaults();
       setPlatformBusy(false);
       loadPlatformConfig({ force: true });
     });
