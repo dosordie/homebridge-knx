@@ -55,70 +55,37 @@
     padding: 1.25rem 1.35rem;
   }
 
-  .knx-brand-group,
-  .knx-wordmark-card {
+  .knx-logo-lockup {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
+    justify-content: center;
+    gap: clamp(1rem, 4vw, 2.3rem);
+    width: 100%;
   }
 
   .knx-homebridge-mark {
     display: grid;
     place-items: center;
-    width: 4.2rem;
-    height: 4.2rem;
+    width: clamp(5.2rem, 14vw, 7.6rem);
+    height: clamp(5.2rem, 14vw, 7.6rem);
     flex: 0 0 auto;
-    border-radius: 1rem;
-    background: linear-gradient(145deg, #02a9f4, #0089d7);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32), 0 12px 22px rgba(0, 0, 0, 0.22);
+    border-radius: 50%;
+    background: #51216d;
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.24);
   }
 
   .knx-homebridge-mark svg {
-    width: 3.15rem;
-    height: 3.15rem;
+    width: 78%;
+    height: 78%;
     display: block;
-  }
-
-  .knx-eyebrow {
-    margin: 0 0 0.15rem;
-    color: rgba(255, 255, 255, 0.78);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-
-  .knx-hero-title {
-    margin: 0;
-    color: #fff;
-    font-size: clamp(1.45rem, 3vw, 2.1rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-  }
-
-  .knx-hero-subtitle {
-    margin: 0.2rem 0 0;
-    color: rgba(255, 255, 255, 0.78);
-    font-size: 0.95rem;
-  }
-
-  .knx-wordmark-card {
-    justify-content: center;
-    min-width: min(18rem, 42vw);
-    padding: 0.45rem;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 1rem;
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
-    backdrop-filter: blur(8px);
   }
 
   .knx-logo-image {
     display: block;
-    width: min(16.5rem, 38vw);
+    width: min(11.5rem, 34vw);
     max-width: 100%;
     height: auto;
-    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.28));
+    filter: drop-shadow(0 8px 15px rgba(0, 0, 0, 0.22));
   }
 
   .knx-tabs {
@@ -193,43 +160,7 @@
   }
 
   .knx-settings-layout {
-    display: grid;
-    grid-template-columns: minmax(12rem, 0.32fr) minmax(0, 1fr);
-    gap: 1rem;
-  }
-
-  .knx-settings-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
-    padding: 0.8rem;
-    border-radius: 0.9rem;
-    background: linear-gradient(180deg, #f8fafc, #eef1f4);
-    border: 1px solid var(--knx-border);
-  }
-
-  .knx-settings-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.7rem 0.75rem;
-    border-radius: 0.75rem;
-    color: #4b545e;
-    font-weight: 700;
-  }
-
-  .knx-settings-nav-item.active {
-    background: #fff;
-    color: var(--knx-charcoal);
-    box-shadow: 0 6px 14px rgba(20, 24, 31, 0.08);
-  }
-
-  .knx-settings-nav-dot {
-    width: 0.62rem;
-    height: 0.62rem;
-    border-radius: 50%;
-    background: var(--knx-orange);
-    box-shadow: 0 0 0 0.22rem rgba(245, 130, 32, 0.15);
+    display: block;
   }
 
   .knx-form-section {
@@ -295,20 +226,6 @@
     gap: 0.75rem;
     align-items: end;
     margin-bottom: 0.85rem;
-  }
-
-  .knx-path-pill {
-    display: inline-flex;
-    max-width: 100%;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.32rem 0.55rem;
-    border-radius: 999px;
-    background: rgba(29, 185, 84, 0.1);
-    color: #116b31;
-    font-size: 0.78rem;
-    font-weight: 700;
-    word-break: break-all;
   }
 
   .knx-codemirror-host {
@@ -468,53 +385,41 @@
   }
 
   @media (max-width: 760px) {
-    .knx-hero-inner,
     .knx-editor-meta,
-    .knx-settings-layout,
     .knx-field-grid {
       grid-template-columns: 1fr;
     }
 
     .knx-hero-inner {
       flex-direction: column;
-      align-items: stretch;
+      align-items: center;
     }
 
-    .knx-wordmark-card {
-      justify-content: flex-start;
+    .knx-logo-lockup {
+      justify-content: center;
     }
 
     .knx-tabs {
       flex-direction: column;
     }
 
-    .knx-settings-nav {
-      display: none;
-    }
   }
 </style>
 
 <div id="knxUiShell" class="knx-ui-shell">
   <header class="knx-hero" aria-label="homebridge-knx custom UI header">
     <div class="knx-hero-inner">
-      <div class="knx-brand-group">
+      <div class="knx-logo-lockup" aria-label="Homebridge KNX">
         <div class="knx-homebridge-mark" aria-label="Homebridge">
           <svg viewBox="0 0 64 64" role="img" aria-hidden="true" focusable="false">
-            <circle cx="32" cy="32" r="30" fill="#02a9f4"/>
-            <path d="M17 32.2 32 19l15 13.2v17.3a2.5 2.5 0 0 1-2.5 2.5h-25a2.5 2.5 0 0 1-2.5-2.5V32.2Z" fill="#fff"/>
-            <path d="M14 33.5 32 17l18 16.5" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M24 51.5V38h16v13.5" fill="#02a9f4"/>
-            <path d="M23 31h18M20 37h24M18 43h28" stroke="#02a9f4" stroke-width="2.6" stroke-linecap="round" opacity="0.95"/>
+            <path d="M13.5 34.5 32 16l18.5 18.5" fill="none" stroke="#fff" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21.5 42.4 32 31.9l10.5 10.5" fill="none" stroke="#fff" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22 51.2 32 41.2l7.2 7.2" fill="none" stroke="#fff" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M42.7 26.7v-8.5h7.8v16.3" fill="none" stroke="#fff" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M32 16 50.5 34.5" fill="none" stroke="#fff" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <div>
-          <p class="knx-eyebrow">Homebridge Plugin UI</p>
-          <h1 class="knx-hero-title">homebridge-knx</h1>
-          <p class="knx-hero-subtitle">Plugin Einstellungen und KNX Config Editor in einer modernen Oberfläche.</p>
-        </div>
-      </div>
-      <div class="knx-wordmark-card" aria-label="Eigenes KNX Branding">
-        <img class="knx-logo-image" src="./knx-logo.svg" alt="Eigenes grünes KNX Config Control Logo">
+        <img class="knx-logo-image" src="./knx-logo.svg" alt="Grüner KNX Schriftzug">
       </div>
     </div>
   </header>
@@ -553,12 +458,6 @@
       <div class="card knx-card mb-3">
         <div class="card-body">
           <div class="knx-settings-layout">
-            <aside class="knx-settings-nav" aria-label="Einstellungsbereiche">
-              <div class="knx-settings-nav-item active"><span class="knx-settings-nav-dot"></span> Basis</div>
-              <div class="knx-settings-nav-item"><span class="knx-settings-nav-dot"></span> Verbindung</div>
-              <div class="knx-settings-nav-item"><span class="knx-settings-nav-dot"></span> Aktionen</div>
-            </aside>
-
             <form id="platformConfigForm" novalidate>
               <div class="knx-form-section">
                 <div class="knx-section-heading">Basis-Konfiguration</div>
@@ -627,11 +526,7 @@
       <div class="card knx-card mb-3">
         <div class="card-body">
           <div class="knx-card-header">
-            <div>
-              <h2 class="knx-card-title">KNX Config Editor</h2>
-              <p class="knx-card-copy">Großer JSON/YAML Editor für die externe KNX-Konfiguration mit Datei-Auswahl, Validierung und Speicheraktionen.</p>
-            </div>
-            <span class="knx-path-pill">Externe Konfiguration</span>
+            <h2 class="knx-card-title">KNX Config Editor</h2>
           </div>
 
           <input id="configPath" type="hidden" readonly value="Loading...">
