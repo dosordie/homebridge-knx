@@ -417,9 +417,17 @@
     }
 
     function refreshEditorSoon() {
-      if (cmEditor && typeof cmEditor.refresh === 'function') {
+      if (cmEditor) {
+        const wrapper = cmEditor.getWrapperElement();
+        if (wrapper) {
+          wrapper.style.height = '520px';
+          wrapper.style.minHeight = '520px';
+          wrapper.style.display = 'block';
+        }
         requestAnimationFrame(() => cmEditor.refresh());
         setTimeout(() => cmEditor.refresh(), 50);
+        setTimeout(() => cmEditor.refresh(), 250);
+        setTimeout(() => cmEditor.refresh(), 1000);
       }
       fixScrollHeight();
     }
