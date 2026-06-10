@@ -6,11 +6,23 @@
     align-items: center;
   }
 
+  .knx-codemirror-host {
+    width: 100%;
+    min-height: 520px;
+  }
+
+  .knx-codemirror-host .CodeMirror,
   .CodeMirror {
     height: 520px;
+    min-height: 520px;
     border: 1px solid var(--bs-border-color, #ced4da);
     border-radius: 0.375rem;
     font-size: 0.875rem;
+  }
+
+  .knx-codemirror-host.d-none,
+  #editorFallback.d-none {
+    display: none !important;
   }
 
   #editorFallback {
@@ -140,7 +152,8 @@
         <div id="status" class="alert alert-secondary" role="alert">Open this tab to load the KNX configuration.</div>
 
         <label class="form-label" for="editorFallback">File content</label>
-        <textarea id="editorFallback" class="form-control" spellcheck="false" disabled></textarea>
+        <div id="codeMirrorHost" class="knx-codemirror-host d-none"></div>
+        <textarea id="editorFallback" class="form-control d-none" spellcheck="false" disabled></textarea>
       </div>
     </div>
   </section>
@@ -167,6 +180,7 @@
     const directoryPanel = document.getElementById('directoryPanel');
     const directoryMessage = document.getElementById('directoryMessage');
     const fileSelect = document.getElementById('fileSelect');
+    const codeMirrorHost = document.getElementById('codeMirrorHost');
     const editorFallback = document.getElementById('editorFallback');
     const status = document.getElementById('status');
     const reloadButton = document.getElementById('reloadButton');
@@ -236,10 +250,10 @@
       formatJsonButton.disabled = busy || !selectedFile || currentExtension !== '.json';
       validateButton.disabled = busy || !selectedFile;
       saveButton.disabled = busy || !selectedFile;
-      editorFallback.disabled = busy || !selectedFile;
-      if (cmEditor) {
+      if (cmEditor && codeMirrorAvailable) {
         cmEditor.setOption('readOnly', busy || !selectedFile);
       }
+      editorFallback.disabled = busy || !selectedFile;
       updateFormatJsonVisibility();
     }
 
@@ -328,6 +342,18 @@
       formatJsonButton.classList.toggle('d-none', !show);
     }
 
+    function showCodeMirror() {
+      codeMirrorAvailable = true;
+      codeMirrorHost.classList.remove('d-none');
+      editorFallback.classList.add('d-none');
+    }
+
+    function showTextareaFallback() {
+      codeMirrorAvailable = false;
+      codeMirrorHost.classList.add('d-none');
+      editorFallback.classList.remove('d-none');
+    }
+
     async function ensureCodeEditor() {
       if (codeMirrorInitialised) {
         return;
@@ -344,11 +370,13 @@
           }
         }
 
-        if (!window.CodeMirror || typeof window.CodeMirror.fromTextArea !== 'function') {
-          throw new Error('CodeMirror did not expose CodeMirror.fromTextArea.');
+        if (typeof window.CodeMirror !== 'function') {
+          throw new Error('CodeMirror constructor is not available.');
         }
 
-        cmEditor = window.CodeMirror.fromTextArea(editorFallback, {
+        codeMirrorHost.textContent = '';
+        cmEditor = window.CodeMirror(codeMirrorHost, {
+          value: editorFallback.value || '',
           lineNumbers: true,
           mode: editorModeForExtension(currentExtension),
           matchBrackets: true,
@@ -359,26 +387,32 @@
           readOnly: true,
         });
         window.knxCodeMirrorEditor = cmEditor;
-        codeMirrorAvailable = true;
+        window.knxCodeMirrorDebug = {
+          codeMirrorHost,
+          editorFallback,
+          getEditor: () => cmEditor,
+          getWrapper: () => cmEditor && cmEditor.getWrapperElement(),
+          refreshEditorSoon,
+        };
+        showCodeMirror();
         refreshEditorSoon();
       } catch (error) {
-        codeMirrorAvailable = false;
+        showTextareaFallback();
         cmEditor = null;
-        editorFallback.classList.remove('d-none');
         console.warn('[homebridge-knx] CodeMirror could not be loaded; using textarea fallback.', error);
       }
     }
 
     function getEditorValue() {
-      return cmEditor ? cmEditor.getValue() : editorFallback.value;
+      return cmEditor && codeMirrorAvailable ? cmEditor.getValue() : editorFallback.value;
     }
 
     function setEditorValue(value) {
       const nextValue = value || '';
+      editorFallback.value = nextValue;
       if (cmEditor) {
         cmEditor.setValue(nextValue);
-      } else {
-        editorFallback.value = nextValue;
+        refreshEditorSoon();
       }
     }
 
@@ -395,7 +429,7 @@
     }
 
     function updateLoadedFileStatus(fileName) {
-      if (codeMirrorAvailable && cmEditor) {
+      if (cmEditor && codeMirrorAvailable && cmEditor.getWrapperElement()) {
         setStatus(`Loaded ${fileName}. CodeMirror editor active.`, 'success');
       } else {
         setStatus(`Loaded ${fileName}. Textarea fallback active.`, 'warning');
@@ -424,6 +458,7 @@
         }
       }
 
+      refreshEditorSoon();
       fixScrollHeight();
     }
 
@@ -525,6 +560,7 @@
             validateButton.disabled = true;
             saveButton.disabled = true;
             editorFallback.disabled = true;
+            refreshEditorSoon();
             layoutEditor();
             return;
           }
@@ -579,6 +615,7 @@
         setEditorValue(response.content || '');
         updateLoadedFileStatus(response.file.relative);
         setBusy(false);
+        refreshEditorSoon();
         setTimeout(() => refreshEditorSoon(), 50);
       } catch (error) {
         showError(error);
