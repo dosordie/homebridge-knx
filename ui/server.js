@@ -176,41 +176,85 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
     }
 
     async handleConfigRequest() {
-        const platformConfig = await this.getFirstKnxPlatformConfig();
-        const configPath = platformConfig.config_path;
+        const requestId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        this.log(`[${requestId}] external-config/metadata start`);
 
-        this.log(`Using KNX config_path: ${configPath || '(not configured)'}`);
+        try {
+            this.log(`[${requestId}] getFirstKnxPlatformConfig start`);
+            const platformConfig = await this.withTimeout(
+                this.getFirstKnxPlatformConfig(),
+                3000,
+                `[${requestId}] getFirstKnxPlatformConfig`,
+            );
+            this.log(`[${requestId}] getFirstKnxPlatformConfig done`);
 
-        if (!configPath) {
-            throw this.requestError('KNX platform config does not define config_path.', 400, 'Missing config_path');
-        }
+            const configPath = platformConfig.config_path;
+            this.log(`[${requestId}] config_path: ${configPath || '(not configured)'}`);
+            this.log(`Using KNX config_path: ${configPath || '(not configured)'}`);
 
-        const resolved = await this.resolveAllowedTarget(configPath);
-        const stat = await this.safeStat(resolved.realPath);
+            if (!configPath) {
+                throw this.requestError('KNX platform config does not define config_path.', 400, 'Missing config_path');
+            }
 
-        if (!stat) {
-            throw this.requestError('File not found.', 404, 'File not found');
-        }
+            this.log(`[${requestId}] resolveAllowedTarget start`);
+            const resolved = await this.withTimeout(
+                this.resolveAllowedTarget(configPath),
+                3000,
+                `[${requestId}] resolveAllowedTarget ${configPath}`,
+            );
+            this.log(`[${requestId}] resolveAllowedTarget done: ${resolved.realPath}`);
 
-        if (stat.isDirectory()) {
-            const files = await this.listConfigFiles(resolved.realPath);
+            this.log(`[${requestId}] safeStat start`);
+            const stat = await this.withTimeout(
+                this.safeStat(resolved.realPath),
+                3000,
+                `[${requestId}] safeStat ${resolved.realPath}`,
+            );
+            this.log(`[${requestId}] safeStat done: ${stat ? 'found' : 'not found'}`);
+
+            if (!stat) {
+                throw this.requestError('File not found.', 404, 'File not found');
+            }
+
+            const isDirectory = stat.isDirectory();
+            this.log(`[${requestId}] isDirectory ${isDirectory}`);
+
+            if (isDirectory) {
+                this.log(`[${requestId}] listConfigFiles start`);
+                const files = await this.withTimeout(
+                    this.listConfigFiles(resolved.realPath),
+                    3000,
+                    `[${requestId}] listConfigFiles ${resolved.realPath}`,
+                );
+                this.log(`[${requestId}] listConfigFiles done: ${files.length} files`);
+                this.log(`[${requestId}] response success`);
+
+                return {
+                    configPath,
+                    mode: 'directory',
+                    files,
+                    message: files.length
+                        ? 'Select a configuration file from this directory.'
+                        : 'config_path points to a directory; no JSON/YAML files were found.',
+                };
+            }
+
+            this.assertSupportedFile(resolved.realPath);
+            this.log(`[${requestId}] response success`);
+
             return {
                 configPath,
-                mode: 'directory',
-                files,
-                message: files.length
-                    ? 'Select a configuration file from this directory.'
-                    : 'config_path points to a directory; no JSON/YAML files were found.',
+                mode: 'file',
+                file: this.toFileResponse(resolved.realPath, resolved.realPath),
             };
+        } catch (error) {
+            this.log(`[${requestId}] external-config/metadata failed: ${error.stack || error.message}`);
+            throw this.requestError(
+                `Unable to load KNX config metadata: ${error.message}`,
+                500,
+                'Metadata load failed',
+            );
         }
-
-        this.assertSupportedFile(resolved.realPath);
-
-        return {
-            configPath,
-            mode: 'file',
-            file: this.toFileResponse(resolved.realPath, resolved.realPath),
-        };
     }
 
     async handleLoadRequest(payload) {
@@ -629,11 +673,33 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
         await Promise.all(oldBackups.map((backup) => fsp.unlink(backup.path)));
     }
 
-    async listConfigFiles(directoryPath) {
-        const entries = await fsp.readdir(directoryPath, { withFileTypes: true });
+    async listConfigFiles(directoryPath, maxDepth = 5) {
         const files = [];
 
+        await this.collectConfigFiles(directoryPath, directoryPath, files, 0, maxDepth);
+
+        return files.sort((a, b) => a.relative.localeCompare(b.relative));
+    }
+
+    async collectConfigFiles(directoryPath, baseRealPath, files, depth, maxDepth) {
+        if (depth > maxDepth) {
+            return;
+        }
+
+        const entries = await fsp.readdir(directoryPath, { withFileTypes: true });
+
         for (const entry of entries) {
+            if (this.shouldIgnoreConfigEntry(entry)) {
+                continue;
+            }
+
+            const entryPath = path.join(directoryPath, entry.name);
+
+            if (entry.isDirectory()) {
+                await this.collectConfigFiles(entryPath, baseRealPath, files, depth + 1, maxDepth);
+                continue;
+            }
+
             if (!entry.isFile()) {
                 continue;
             }
@@ -643,12 +709,24 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
                 continue;
             }
 
-            const realPath = await fsp.realpath(path.join(directoryPath, entry.name));
-            this.assertInside(realPath, [directoryPath]);
-            files.push(this.toFileResponse(realPath, directoryPath));
+            const realPath = await fsp.realpath(entryPath);
+            this.assertInside(realPath, [baseRealPath]);
+            files.push(this.toFileResponse(realPath, baseRealPath));
+        }
+    }
+
+    shouldIgnoreConfigEntry(entry) {
+        const ignoredDirectoryNames = new Set(['node_modules', 'backups', 'disabled']);
+
+        if (entry.name.startsWith('.') || entry.name.endsWith('.bak')) {
+            return true;
         }
 
-        return files.sort((a, b) => a.name.localeCompare(b.name));
+        if (entry.isSymbolicLink()) {
+            return true;
+        }
+
+        return entry.isDirectory() && ignoredDirectoryNames.has(entry.name);
     }
 
     toFileResponse(realPath, baseRealPath) {
