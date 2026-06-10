@@ -329,7 +329,10 @@
     let configMetadataLoading = false;
     let initialiseRunning = false;
     let initialiseRetryTimer = null;
+    let uiAlive = true;
+    let lifecycleGeneration = 0;
     let requestSequence = 0;
+    const requestTimeoutTimers = new Map();
     let latestPlatformLoadRequestId = null;
     let latestPlatformSaveRequestId = null;
     let latestMetadataRequestId = null;
@@ -355,31 +358,80 @@
       }
     }
 
+    function clearRequestTimeout(requestId) {
+      const timeoutId = requestTimeoutTimers.get(requestId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        requestTimeoutTimers.delete(requestId);
+      }
+    }
+
+    function markUiDestroyed() {
+      uiAlive = false;
+      lifecycleGeneration++;
+
+      if (initialiseRetryTimer) {
+        clearTimeout(initialiseRetryTimer);
+        initialiseRetryTimer = null;
+      }
+
+      for (const timeoutId of requestTimeoutTimers.values()) {
+        clearTimeout(timeoutId);
+      }
+      requestTimeoutTimers.clear();
+    }
+
+    function isCurrentLifecycle(generation) {
+      return uiAlive && generation === lifecycleGeneration;
+    }
+
+    function isStaleBridgeError(error) {
+      const message = String(error && (error.message || error));
+      return message.includes('postMessage') || message.includes('UI instance is no longer active');
+    }
+
+    function logStaleBridgeRequest(requestId, endpoint, error) {
+      console.warn('[homebridge-knx-ui]', requestId, endpoint, 'stale bridge request ignored', error);
+      console.debug('[homebridge-knx-ui]', requestId, endpoint, 'stale bridge request ignored');
+    }
+
     function startRequestWithTimeout(endpoint, payload, timeoutMs = 8000) {
       const requestId = `knx-ui-${Date.now().toString(36)}-${++requestSequence}`;
       let timeoutId = null;
+      let apiRequest;
 
       console.debug('[homebridge-knx-ui]', requestId, endpoint, 'start');
 
-      const apiRequest = payload === undefined ? homebridge.request(endpoint) : homebridge.request(endpoint, payload);
+      try {
+        if (!uiAlive) {
+          return { requestId, promise: Promise.reject(new Error('UI instance is no longer active')) };
+        }
+
+        apiRequest = payload === undefined
+          ? homebridge.request(endpoint)
+          : homebridge.request(endpoint, payload);
+      } catch (error) {
+        console.warn('[homebridge-knx-ui]', requestId, endpoint, 'homebridge.request failed synchronously', error);
+
+        return {
+          requestId,
+          promise: Promise.reject(error),
+        };
+      }
+
       const timeoutRequest = new Promise((_, reject) => {
         timeoutId = setTimeout(() => reject(new Error(`Request timeout: ${endpoint}`)), timeoutMs);
+        requestTimeoutTimers.set(requestId, timeoutId);
       });
 
       const promise = Promise.race([apiRequest, timeoutRequest])
         .then((response) => {
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-            timeoutId = null;
-          }
+          clearRequestTimeout(requestId);
           console.debug('[homebridge-knx-ui]', requestId, endpoint, 'success');
           return response;
         })
         .catch((error) => {
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-            timeoutId = null;
-          }
+          clearRequestTimeout(requestId);
           console.debug('[homebridge-knx-ui]', requestId, endpoint, 'failed', error);
           throw error;
         });
@@ -634,6 +686,9 @@
     }
 
     async function setActiveTab(panelId) {
+      const generation = lifecycleGeneration;
+      if (!isCurrentLifecycle(generation)) return;
+
       for (const button of tabButtons) {
         const active = button.dataset.knxTab === panelId;
         button.classList.toggle('active', active);
@@ -647,21 +702,27 @@
       }
 
       if (panelId === 'plugin-settings-panel') {
-        await loadPlatformConfig({ force: true });
+        await loadPlatformConfig({ force: true, generation });
       }
 
       if (panelId === 'knx-editor-panel') {
         editorLoaded = false;
-        await loadConfigMetadata({ force: true });
+        await loadConfigMetadata({ force: true, generation });
+        if (!isCurrentLifecycle(generation)) return;
         editorLoaded = true;
       }
 
-      refreshEditorSoon();
-      fixScrollHeight();
+      if (isCurrentLifecycle(generation)) {
+        refreshEditorSoon();
+        fixScrollHeight();
+      }
     }
 
     async function safeInitialise(reason = 'initial') {
+      if (!uiAlive) return;
       if (initialiseRunning) return;
+
+      const generation = ++lifecycleGeneration;
 
       if (!window.homebridge || typeof homebridge.request !== 'function') {
         if (!initialiseRetryTimer) {
@@ -672,6 +733,13 @@
         }
         return;
       }
+
+      if (initialiseRetryTimer) {
+        clearTimeout(initialiseRetryTimer);
+        initialiseRetryTimer = null;
+      }
+
+      if (!isCurrentLifecycle(generation)) return;
 
       platformConfigLoading = false;
       configMetadataLoading = false;
@@ -689,7 +757,8 @@
         }
 
         updateKnxdVisibility();
-        await loadPlatformConfig({ force: true });
+        await loadPlatformConfig({ force: true, generation });
+        if (!isCurrentLifecycle(generation)) return;
 
         const editorPanelActive = document
           .getElementById('knx-editor-panel')
@@ -697,19 +766,23 @@
 
         if (editorPanelActive) {
           editorLoaded = false;
-          await loadConfigMetadata({ force: true });
+          await loadConfigMetadata({ force: true, generation });
+          if (!isCurrentLifecycle(generation)) return;
           editorLoaded = true;
         }
       } catch (error) {
         console.warn('[homebridge-knx] initialise failed', reason, error);
       } finally {
         initialiseRunning = false;
-        refreshEditorSoon();
-        fixScrollHeight();
+        if (isCurrentLifecycle(generation)) {
+          refreshEditorSoon();
+          fixScrollHeight();
+        }
       }
     }
 
-    async function loadPlatformConfig({ force = false } = {}) {
+    async function loadPlatformConfig({ force = false, generation = lifecycleGeneration } = {}) {
+      if (!isCurrentLifecycle(generation)) return;
       if (platformConfigLoading && !force) return;
       if (force) {
         platformConfigLoading = false;
@@ -724,7 +797,7 @@
 
       try {
         const response = await promise;
-        if (requestId !== latestPlatformLoadRequestId) return;
+        if (requestId !== latestPlatformLoadRequestId || !isCurrentLifecycle(generation)) return;
 
         const config = response.config || {};
         platformName.value = config.name || '';
@@ -735,10 +808,14 @@
         platformKnxPhyAddr.value = config.knx_phy_addr || '';
         setPlatformStatus('Plugin settings loaded.', 'success');
       } catch (error) {
-        if (requestId !== latestPlatformLoadRequestId) return;
+        if (isStaleBridgeError(error)) {
+          logStaleBridgeRequest(requestId, '/platform-config/load', error);
+          return;
+        }
+        if (requestId !== latestPlatformLoadRequestId || !isCurrentLifecycle(generation)) return;
         showPlatformError(error);
       } finally {
-        if (requestId === latestPlatformLoadRequestId) {
+        if (requestId === latestPlatformLoadRequestId && isCurrentLifecycle(generation)) {
           platformConfigLoading = false;
           setPlatformBusy(false);
         }
@@ -747,6 +824,9 @@
 
     async function savePlatformConfig(event) {
       event.preventDefault();
+      const generation = lifecycleGeneration;
+      if (!isCurrentLifecycle(generation)) return;
+
       setPlatformBusy(true);
       setPlatformStatus('Validating and saving plugin settings...', 'secondary');
 
@@ -764,7 +844,7 @@
 
       try {
         const response = await promise;
-        if (requestId !== latestPlatformSaveRequestId) return;
+        if (requestId !== latestPlatformSaveRequestId || !isCurrentLifecycle(generation)) return;
 
         const backup = response.backup ? ` Backup: ${response.backup}.` : '';
         setPlatformStatus(`${response.message || 'Homebridge restart required.'}${backup}`, 'success');
@@ -773,10 +853,14 @@
           homebridge.toast.success('Homebridge restart required.', 'Plugin Einstellungen');
         }
       } catch (error) {
-        if (requestId !== latestPlatformSaveRequestId) return;
+        if (isStaleBridgeError(error)) {
+          logStaleBridgeRequest(requestId, '/platform-config/save', error);
+          return;
+        }
+        if (requestId !== latestPlatformSaveRequestId || !isCurrentLifecycle(generation)) return;
         showPlatformError(error);
       } finally {
-        if (requestId === latestPlatformSaveRequestId) {
+        if (requestId === latestPlatformSaveRequestId && isCurrentLifecycle(generation)) {
           setPlatformBusy(false);
         }
       }
@@ -794,7 +878,8 @@
       return match ? match[1] : '';
     }
 
-    async function loadConfigMetadata({ force = false } = {}) {
+    async function loadConfigMetadata({ force = false, generation = lifecycleGeneration } = {}) {
+      if (!isCurrentLifecycle(generation)) return;
       if (configMetadataLoading && !force) return;
       if (force) {
         configMetadataLoading = false;
@@ -802,6 +887,10 @@
 
       configMetadataLoading = true;
       await ensureCodeEditor();
+      if (!isCurrentLifecycle(generation)) {
+        configMetadataLoading = false;
+        return;
+      }
       setBusy(true);
       setStatus('Loading KNX configuration metadata...', 'secondary');
       setEditorValue('');
@@ -812,7 +901,7 @@
 
       try {
         const response = await promise;
-        if (requestId !== latestMetadataRequestId) return;
+        if (requestId !== latestMetadataRequestId || !isCurrentLifecycle(generation)) return;
 
         mode = response.mode;
         configPathInput.value = response.configPath || '';
@@ -847,19 +936,23 @@
           }
 
           updateCurrentFile({ relative: fileSelect.value, extension: fileSelect.selectedOptions[0].dataset.extension });
-          await loadFile({ isCurrent: () => requestId === latestMetadataRequestId });
+          await loadFile({ generation, isCurrent: () => requestId === latestMetadataRequestId && isCurrentLifecycle(generation) });
           return;
         }
 
         directoryPanel.classList.add('d-none');
         updateCurrentFile(response.file);
-        await loadFile({ isCurrent: () => requestId === latestMetadataRequestId });
+        await loadFile({ generation, isCurrent: () => requestId === latestMetadataRequestId && isCurrentLifecycle(generation) });
       } catch (error) {
-        if (requestId !== latestMetadataRequestId) return;
+        if (isStaleBridgeError(error)) {
+          logStaleBridgeRequest(requestId, '/external-config/metadata', error);
+          return;
+        }
+        if (requestId !== latestMetadataRequestId || !isCurrentLifecycle(generation)) return;
         showError(error);
         setBusy(false);
       } finally {
-        if (requestId === latestMetadataRequestId) {
+        if (requestId === latestMetadataRequestId && isCurrentLifecycle(generation)) {
           configMetadataLoading = false;
           setBusy(false);
           layoutEditor();
@@ -867,7 +960,8 @@
       }
     }
 
-    async function loadFile({ isCurrent = () => true } = {}) {
+    async function loadFile({ generation = lifecycleGeneration, isCurrent = () => true } = {}) {
+      if (!isCurrentLifecycle(generation)) return;
       if (!selectedFile) {
         if (!isCurrent()) return;
         setStatus('No file selected.', 'warning');
@@ -884,7 +978,7 @@
 
       try {
         const response = await promise;
-        if (requestId !== latestFileLoadRequestId || !isCurrent()) return;
+        if (requestId !== latestFileLoadRequestId || !isCurrent() || !isCurrentLifecycle(generation)) return;
 
         if (response.mode === 'directory') {
           setStatus(response.message || 'Select a file first.', 'warning');
@@ -906,17 +1000,24 @@
         refreshEditorSoon();
         setTimeout(() => refreshEditorSoon(), 50);
       } catch (error) {
-        if (requestId !== latestFileLoadRequestId || !isCurrent()) return;
+        if (isStaleBridgeError(error)) {
+          logStaleBridgeRequest(requestId, '/external-config/load', error);
+          return;
+        }
+        if (requestId !== latestFileLoadRequestId || !isCurrent() || !isCurrentLifecycle(generation)) return;
         showError(error);
         setBusy(false);
       } finally {
-        if (requestId === latestFileLoadRequestId && isCurrent()) {
+        if (requestId === latestFileLoadRequestId && isCurrent() && isCurrentLifecycle(generation)) {
           layoutEditor();
         }
       }
     }
 
     async function validateFile() {
+      const generation = lifecycleGeneration;
+      if (!isCurrentLifecycle(generation)) return;
+
       setBusy(true);
       setStatus('Validating...', 'secondary');
 
@@ -928,23 +1029,30 @@
 
       try {
         const response = await promise;
-        if (requestId !== latestValidateRequestId) return;
+        if (requestId !== latestValidateRequestId || !isCurrentLifecycle(generation)) return;
 
         setStatus(response.message || 'Configuration is valid.', 'success');
         if (window.homebridge && homebridge.toast && homebridge.toast.success) {
           homebridge.toast.success('Configuration is valid.', 'KNX Config Editor');
         }
       } catch (error) {
-        if (requestId !== latestValidateRequestId) return;
+        if (isStaleBridgeError(error)) {
+          logStaleBridgeRequest(requestId, '/external-config/validate', error);
+          return;
+        }
+        if (requestId !== latestValidateRequestId || !isCurrentLifecycle(generation)) return;
         showError(error);
       } finally {
-        if (requestId === latestValidateRequestId) {
+        if (requestId === latestValidateRequestId && isCurrentLifecycle(generation)) {
           setBusy(false);
         }
       }
     }
 
     async function saveFile() {
+      const generation = lifecycleGeneration;
+      if (!isCurrentLifecycle(generation)) return;
+
       setBusy(true);
       setStatus('Validating and saving...', 'secondary');
 
@@ -956,7 +1064,7 @@
 
       try {
         const response = await promise;
-        if (requestId !== latestSaveRequestId) return;
+        if (requestId !== latestSaveRequestId || !isCurrentLifecycle(generation)) return;
 
         const backup = response.backup ? ` Backup: ${response.backup}.` : '';
         setStatus(`${response.message || 'Configuration saved.'}${backup}`, 'success');
@@ -964,10 +1072,14 @@
           homebridge.toast.success('Configuration saved. Restart Homebridge after changes.', 'KNX Config Editor');
         }
       } catch (error) {
-        if (requestId !== latestSaveRequestId) return;
+        if (isStaleBridgeError(error)) {
+          logStaleBridgeRequest(requestId, '/external-config/save', error);
+          return;
+        }
+        if (requestId !== latestSaveRequestId || !isCurrentLifecycle(generation)) return;
         showError(error);
       } finally {
-        if (requestId === latestSaveRequestId) {
+        if (requestId === latestSaveRequestId && isCurrentLifecycle(generation)) {
           setBusy(false);
         }
       }
@@ -1015,6 +1127,9 @@
     validateButton.addEventListener('click', validateFile);
     saveButton.addEventListener('click', saveFile);
     window.addEventListener('resize', layoutEditor);
+    window.addEventListener('pagehide', markUiDestroyed);
+    window.addEventListener('beforeunload', markUiDestroyed);
+    window.addEventListener('unload', markUiDestroyed);
 
     if (window.homebridge && typeof homebridge.addEventListener === 'function') {
       homebridge.addEventListener('ready', () => safeInitialise('ready'));
