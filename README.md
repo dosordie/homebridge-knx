@@ -1,22 +1,19 @@
-#homebridge-knx Version v0.5.0-beta.13-dosordie.1  
+# homebridge-knx v0.5.0-beta.13-dosordie.8
 
+Homebridge KNX platform plugin fork with Homebridge 2.x support, custom configuration UI, YAML/JSON config editing, child-bridge friendly setup, and knxjs fixes.
 
-Fix Für HB 2.0.0, nicht abwärtskompatibel! 
-Nur mit KNX Rounting getestet, nicht per KNXd
+This fork targets Homebridge 2.x and is not backwards compatible with older Homebridge releases. It has primarily been tested with KNX routing/knxjs; knxd support is retained for existing installations.
 
-
-
-KNX platform shim for homebridge.
 **This cannot run stand-alone in node!**
 
-Please also visit [homebridge github homepage](https://github.com/nfarina/homebridge) first.
+Please also visit the [Homebridge homepage](https://homebridge.io/) first.
 
-Latest to homebridge-knx changes can be found in the [CHANGELOG.md](CHANGELOG.md)
+Latest homebridge-knx changes can be found in the [CHANGELOG.md](CHANGELOG.md).
 
-### This can only be used with homebridge >=1.0 and Node >=10.19.0
+### This can only be used with homebridge >=2.0.0 and Node >14.0.0
 
 ### Prerequisites
-This node module requires either 
+This node module requires either:
   - a running (and properly configured) **knx daemon (knxd)**. You can find the latest version [here](https://github.com/knxd/knxd).  
   - another KNX router which can be reached by KNX multicasts.
 
@@ -28,9 +25,9 @@ I cannot support the knxd. Please address issues directly at the [knxd issue pag
 - `homebridge-knx` should be within the top five hits (yes, there are alternatives), please check the name before installing
 - Then put the configuration file *knx_config.json* into `~/.homebridge` (or another folder to your liking, but it should be **readable** and **writable** by user `homebridge` or group `homebridge` which is created by the homebridge installer), and adapt them to your needs (knxd address and some test devices in `knx_config.json`)
 - Eliminate everything (especially all group addresses) that might harm your KNX installation. Sending bus telegrams to your alarm device might wake the neighbourhood unpleasantly!
-- Use the homebridge UI to create platform instances. You need to specify a name (your choice), a file name or path to th eknx configuration files, and the means of communication with the KNX bus (knxd or KNX multicast).
+- Use the Homebridge UI to create platform instances. Specify a name, a file or directory path for the KNX configuration, and the communication method for the KNX bus (knxd or KNX multicast).
 - You can use the UI to move the platform instances you have created into _child bridges_, which is **heavily encouraged**.
-- You can look at (or even modify) the config using the UI. The following sample is from my test installation
+- You can view, validate, and modify the KNX JSON/YAML configuration in the custom UI. The following sample is from my test installation:
 
 ```json
 {

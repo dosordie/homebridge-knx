@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0-beta.13-dosordie.8
+- Bump package metadata and README version for the main-merge preparation.
+- Expand the plugin description to cover Homebridge 2.x support, the custom configuration UI, YAML/JSON config editing, child-bridge usage, and knxjs fixes.
+- Document the UI refresh work, including KNX/Homebridge branding, cleaner layout, and optional indentation markers in the config editor.
+- Document safer custom UI handling for stale iframe requests, platform config saves, generated directory config fields, and Homebridge UI load timeouts.
+- Add a repository syntax-check script and wire `npm test` to it so release checks no longer fail by design.
+
 ## 0.5.0-beta.13-dosordie.3
 - Add `NotifyOpenOnClosedContact` for `GarageDoorOpenerAdvanced` to optionally report `CurrentDoorState=OPEN` immediately when `KNXDoorClosed` changes from active to inactive.
 
@@ -8,7 +15,7 @@
   The configuration of the KNX gateway (knxd or multicast) has been moved to homebridge's config.json again, to make it configurable using the homebridge UI
 - homebridge UI support for creating child bridges
 - knx configuration files can now be YAML files (extension must be `.yaml`) 
-- knx configuration files can now be splitted into multiple files - only one file per child bridge should contain any other contents than `Devices`
+- knx configuration files can now be split into multiple files - only one file per child bridge should contain any other contents than `Devices`
 
 ## 0.4.3
 - merged PR #198 (Update WindowCoveringTilt.js) by @EyeOfTheStorm 
@@ -49,7 +56,7 @@ Example in the config file (e.g. in Homebridge GUI):
         }
     ]
 ```
-- quite a while back @jendrik found some issues and fixed them. They have been in the master branch ever since but not properly honored or published in a release. PR #194 also contain sthe fixes for using `knxjs` instead of the `eibd` module to talk to other KNX routers than `knxd`
+- quite a while back @jendrik found some issues and fixed them. They have been in the master branch ever since but not properly honored or published in a release. PR #194 also contains the fixes for using `knxjs` instead of the `eibd` module to talk to other KNX routers than `knxd`
 
 ## 0.3.27
 - @CyberChris79 found a breaking change in HAP-nodeJS (the HAP protocol implementation which homebridge is build on) which broke the tiny web server that can display HAP Services and such (see https://github.com/snowdd1/homebridge-knx#looking-up-service-types-and-characteristics) *Note to self: the webserver implementation is ugly and has grown too much for kind-of inline code in index.js*
