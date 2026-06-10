@@ -15,6 +15,14 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
     constructor() {
         super();
 
+        this.onRequest('/platform-config/load', this.handlePlatformConfigLoadRequest.bind(this));
+        this.onRequest('/platform-config/save', this.handlePlatformConfigSaveRequest.bind(this));
+        this.onRequest('/external-config/metadata', this.handleConfigRequest.bind(this));
+        this.onRequest('/external-config/load', this.handleLoadRequest.bind(this));
+        this.onRequest('/external-config/validate', this.handleValidateRequest.bind(this));
+        this.onRequest('/external-config/save', this.handleSaveRequest.bind(this));
+
+        // Backwards-compatible aliases used by the first custom UI version.
         this.onRequest('/config', this.handleConfigRequest.bind(this));
         this.onRequest('/load', this.handleLoadRequest.bind(this));
         this.onRequest('/validate', this.handleValidateRequest.bind(this));
@@ -26,6 +34,126 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
 
     log(message) {
         console.log(`[homebridge-knx config-ui] ${message}`);
+    }
+
+
+    async handlePlatformConfigLoadRequest() {
+        const { platformConfig, index } = await this.getFirstKnxPlatformConfigWithDocument();
+
+        return {
+            index,
+            config: this.toPlatformConfigResponse(platformConfig),
+        };
+    }
+
+    async handlePlatformConfigSaveRequest(payload) {
+        const { config, filePath } = await this.readHomebridgeConfig();
+        const platforms = Array.isArray(config.platforms) ? config.platforms : [];
+        const index = platforms.findIndex((entry) => entry && entry.platform === PLUGIN_ALIAS);
+
+        if (index === -1) {
+            throw this.requestError('No KNX platform config found in Homebridge config.json.', 404, 'KNX config not found');
+        }
+
+        const current = platforms[index];
+        const updates = this.normalisePlatformConfigPayload(payload && payload.config ? payload.config : payload);
+        const next = { ...current };
+
+        for (const [key, value] of Object.entries(updates)) {
+            next[key] = value;
+        }
+
+        next.platform = PLUGIN_ALIAS;
+        platforms[index] = next;
+
+        let content;
+        try {
+            content = `${JSON.stringify(config, null, 4)}\n`;
+            JSON.parse(content);
+        } catch (error) {
+            this.log(`Validation failed for Homebridge config.json: ${error.message}`);
+            throw this.requestError(`Invalid Homebridge config.json: ${error.message}`, 400, 'Invalid JSON');
+        }
+
+        try {
+            const backupPath = await this.createBackup(filePath);
+            await this.atomicWrite(filePath, content);
+            await this.pruneBackups(filePath);
+
+            this.log(`Saved KNX platform config in Homebridge config.json: ${filePath}`);
+            return {
+                saved: true,
+                message: 'Homebridge restart required.',
+                backup: path.basename(backupPath),
+                config: this.toPlatformConfigResponse(next),
+            };
+        } catch (error) {
+            this.log(`Unable to save Homebridge config ${filePath}: ${error.message}`);
+            throw this.requestError(this.friendlyFsError(error, 'write'), 500, error.code || 'Save failed');
+        }
+    }
+
+    normalisePlatformConfigPayload(payload) {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        const updates = {};
+
+        updates.name = this.normaliseOptionalString(data.name, 'name');
+        updates.config_path = this.normaliseRequiredString(data.config_path, 'config_path');
+
+        if (data.knxconnection !== 'knxd' && data.knxconnection !== 'knxjs') {
+            throw this.requestError('knxconnection must be either knxd or knxjs.', 400, 'Invalid knxconnection');
+        }
+        updates.knxconnection = data.knxconnection;
+
+        updates.knx_phy_addr = this.normaliseOptionalString(data.knx_phy_addr, 'knx_phy_addr');
+
+        if (updates.knxconnection === 'knxd') {
+            updates.knxd_ip = this.normaliseOptionalString(data.knxd_ip, 'knxd_ip');
+            updates.knxd_port = this.normalisePort(data.knxd_port);
+        }
+
+        return updates;
+    }
+
+    normaliseRequiredString(value, fieldName) {
+        if (typeof value !== 'string' || !value.trim()) {
+            throw this.requestError(`${fieldName} must not be empty.`, 400, `Invalid ${fieldName}`);
+        }
+
+        return value.trim();
+    }
+
+    normaliseOptionalString(value, fieldName) {
+        if (value === undefined || value === null) {
+            return '';
+        }
+
+        if (typeof value !== 'string') {
+            throw this.requestError(`${fieldName} must be a string.`, 400, `Invalid ${fieldName}`);
+        }
+
+        return value.trim();
+    }
+
+    normalisePort(value) {
+        const port = Number(value);
+
+        if (!Number.isInteger(port) || port < 1 || port > 65535) {
+            throw this.requestError('knxd_port must be a number between 1 and 65535.', 400, 'Invalid knxd_port');
+        }
+
+        return port;
+    }
+
+    toPlatformConfigResponse(platformConfig) {
+        return {
+            name: typeof platformConfig.name === 'string' ? platformConfig.name : '',
+            config_path: typeof platformConfig.config_path === 'string' ? platformConfig.config_path : '',
+            knxconnection: platformConfig.knxconnection === 'knxjs' ? 'knxjs' : 'knxd',
+            knxd_ip: typeof platformConfig.knxd_ip === 'string' ? platformConfig.knxd_ip : '',
+            knxd_port: platformConfig.knxd_port === undefined || platformConfig.knxd_port === null ? 6720 : platformConfig.knxd_port,
+            knx_phy_addr: typeof platformConfig.knx_phy_addr === 'string' ? platformConfig.knx_phy_addr : '',
+        };
     }
 
     async handleConfigRequest() {
@@ -145,24 +273,49 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
         }
     }
 
-    async getFirstKnxPlatformConfig() {
-        let config;
+    async readHomebridgeConfig() {
+        const filePath = this.getHomebridgeConfigPath();
+        let rawConfig;
 
         try {
-            const rawConfig = await fsp.readFile(this.homebridgeConfigPath, 'utf8');
-            config = JSON.parse(rawConfig);
+            rawConfig = await fsp.readFile(filePath, 'utf8');
         } catch (error) {
-            this.log(`Unable to read Homebridge config ${this.homebridgeConfigPath}: ${error.message}`);
+            this.log(`Unable to read Homebridge config ${filePath}: ${error.message}`);
             throw this.requestError('Unable to read Homebridge config.json.', 500, 'Config read failed');
         }
 
-        const platforms = Array.isArray(config.platforms) ? config.platforms : [];
-        const platformConfig = platforms.find((entry) => entry && entry.platform === PLUGIN_ALIAS);
+        try {
+            return { config: JSON.parse(rawConfig), filePath };
+        } catch (error) {
+            this.log(`Invalid Homebridge config ${filePath}: ${error.message}`);
+            throw this.requestError(`Invalid Homebridge config.json: ${error.message}`, 400, 'Invalid JSON');
+        }
+    }
 
-        if (!platformConfig) {
+    getHomebridgeConfigPath() {
+        const filePath = this.homebridgeConfigPath || process.env.HOMEBRIDGE_CONFIG_PATH;
+
+        if (!filePath || typeof filePath !== 'string') {
+            throw this.requestError('Homebridge config path is not available.', 500, 'Config path unavailable');
+        }
+
+        return filePath;
+    }
+
+    async getFirstKnxPlatformConfigWithDocument() {
+        const { config, filePath } = await this.readHomebridgeConfig();
+        const platforms = Array.isArray(config.platforms) ? config.platforms : [];
+        const index = platforms.findIndex((entry) => entry && entry.platform === PLUGIN_ALIAS);
+
+        if (index === -1) {
             throw this.requestError('No KNX platform config found in Homebridge config.json.', 404, 'KNX config not found');
         }
 
+        return { config, filePath, platformConfig: platforms[index], index };
+    }
+
+    async getFirstKnxPlatformConfig() {
+        const { platformConfig } = await this.getFirstKnxPlatformConfigWithDocument();
         return platformConfig;
     }
 
