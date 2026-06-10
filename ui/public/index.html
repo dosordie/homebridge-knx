@@ -55,18 +55,18 @@
 
   .knx-homebridge-logo {
     display: block;
-    width: clamp(5.2rem, 14vw, 7.6rem);
-    height: clamp(5.2rem, 14vw, 7.6rem);
+    width: clamp(4.2rem, 11vw, 6.1rem);
+    height: clamp(4.2rem, 11vw, 6.1rem);
     flex: 0 0 auto;
-    filter: drop-shadow(0 8px 14px rgba(73, 31, 89, 0.16));
+    filter: drop-shadow(0 7px 12px rgba(73, 31, 89, 0.16));
   }
 
   .knx-logo-image {
     display: block;
-    width: min(11.5rem, 34vw);
+    width: min(13rem, 38vw);
     max-width: 100%;
     height: auto;
-    filter: drop-shadow(0 8px 14px rgba(0, 128, 55, 0.14));
+    filter: drop-shadow(0 7px 12px rgba(0, 128, 55, 0.14));
   }
 
   .knx-tabs {
@@ -317,19 +317,17 @@
     height: 16px !important;
   }
 
-  .knx-codemirror-host .knx-leading-indent-space {
-    position: relative;
-    display: inline-block;
-    color: transparent;
-    pointer-events: none;
+  .knx-codemirror-host .CodeMirror-cursors {
+    z-index: 10;
   }
 
-  .knx-codemirror-host .knx-leading-indent-space::after {
-    content: "\00b7";
-    position: absolute;
-    inset: 0;
-    color: rgba(15, 23, 42, 0.28);
-    text-align: center;
+  .knx-codemirror-host .knx-leading-indent-space {
+    position: relative;
+    color: transparent;
+    background-image: radial-gradient(circle, rgba(15, 23, 42, 0.38) 0 1.2px, transparent 1.35px);
+    background-position: 50% 56%;
+    background-repeat: no-repeat;
+    pointer-events: none;
   }
 
   .knx-indent-toggle {
@@ -624,6 +622,8 @@
     let initialiseRunning = false;
     let initialiseRetryTimer = null;
     let loadingOverlayDepth = 0;
+    let indentationMarkers = [];
+    let indentationMarkerTimer = null;
 
     function pluginVersion() {
       return (
@@ -785,77 +785,62 @@
       return match ? match[0].length : 0;
     }
 
-    function createIndentDotSpan() {
-      const span = document.createElement('span');
-      span.className = 'knx-leading-indent-space';
-      span.setAttribute('aria-hidden', 'true');
-      span.textContent = ' ';
-      return span;
+    function clearIndentationMarkers() {
+      for (const marker of indentationMarkers) {
+        marker.clear();
+      }
+      indentationMarkers = [];
     }
 
-    function replaceLeadingSpacesInTextNode(node, count) {
-      let replaceCount = 0;
-      while (replaceCount < count && replaceCount < node.nodeValue.length) {
-        const character = node.nodeValue.charAt(replaceCount);
-        if (character !== ' ' && character !== '\u00a0') {
-          break;
-        }
-        replaceCount += 1;
+    function applyIndentationMarkers() {
+      if (!cmEditor) {
+        return;
       }
 
-      if (replaceCount === 0) {
-        return 0;
-      }
-
-      const fragment = document.createDocumentFragment();
-      for (let index = 0; index < replaceCount; index += 1) {
-        fragment.appendChild(createIndentDotSpan());
-      }
-
-      const remainingText = node.nodeValue.slice(replaceCount);
-      if (remainingText) {
-        fragment.appendChild(document.createTextNode(remainingText));
-      }
-
-      node.parentNode.replaceChild(fragment, node);
-      return replaceCount;
-    }
-
-    function markLeadingIndentation(cm, line, element) {
+      clearIndentationMarkers();
       if (!showIndentation) {
+        cmEditor.refresh();
         return;
       }
 
-      let remainingSpaces = leadingSpacesForLine(line);
-      if (remainingSpaces === 0) {
-        return;
-      }
-
-      const visit = (node) => {
-        if (remainingSpaces === 0) {
-          return;
-        }
-
-        if (node.nodeType === Node.TEXT_NODE) {
-          remainingSpaces -= replaceLeadingSpacesInTextNode(node, remainingSpaces);
-          return;
-        }
-
-        for (const child of Array.from(node.childNodes)) {
-          visit(child);
-          if (remainingSpaces === 0) {
-            break;
+      cmEditor.operation(() => {
+        cmEditor.eachLine((line) => {
+          const spaceCount = leadingSpacesForLine(line);
+          if (spaceCount === 0) {
+            return;
           }
-        }
-      };
 
-      visit(element);
+          const lineNumber = cmEditor.getLineNumber(line);
+          if (lineNumber === null) {
+            return;
+          }
+
+          for (let character = 0; character < spaceCount; character += 1) {
+            indentationMarkers.push(cmEditor.markText(
+              { line: lineNumber, ch: character },
+              { line: lineNumber, ch: character + 1 },
+              { className: 'knx-leading-indent-space' }
+            ));
+          }
+        });
+      });
+      cmEditor.refresh();
+    }
+
+    function scheduleIndentationMarkers() {
+      if (indentationMarkerTimer) {
+        clearTimeout(indentationMarkerTimer);
+      }
+      indentationMarkerTimer = setTimeout(() => {
+        indentationMarkerTimer = null;
+        applyIndentationMarkers();
+      }, 0);
     }
 
     function updateIndentationToggle() {
       showIndentationToggle.checked = showIndentation;
       if (cmEditor) {
-        cmEditor.refresh();
+        scheduleIndentationMarkers();
       }
     }
 
@@ -863,7 +848,7 @@
       showIndentation = showIndentationToggle.checked;
       localStorage.setItem(SHOW_INDENTATION_STORAGE_KEY, showIndentation ? 'true' : 'false');
       if (cmEditor) {
-        cmEditor.refresh();
+        applyIndentationMarkers();
       }
     }
 
@@ -954,7 +939,7 @@
           lineWrapping: false,
           readOnly: true,
         });
-        cmEditor.on('renderLine', markLeadingIndentation);
+        cmEditor.on('changes', scheduleIndentationMarkers);
         updateIndentationToggle();
         window.knxCodeMirrorEditor = cmEditor;
         window.knxCodeMirrorDebug = {
@@ -982,6 +967,7 @@
       editorFallback.value = nextValue;
       if (cmEditor) {
         cmEditor.setValue(nextValue);
+        scheduleIndentationMarkers();
         refreshEditorSoon();
       }
     }
