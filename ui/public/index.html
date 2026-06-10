@@ -11,12 +11,20 @@
   }
 
   .knx-codemirror-host .CodeMirror {
-    height: calc(100vh - 300px);
-    min-height: 650px;
+    height: 420px !important;
+    min-height: 420px !important;
+    max-height: 420px !important;
     border: 1px solid var(--bs-border-color, #ced4da);
     border-radius: 0.375rem;
     font-size: 0.875rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+
+  .knx-codemirror-host .CodeMirror-scroll {
+    height: 420px !important;
+    min-height: 420px !important;
+    max-height: 420px !important;
+    overflow: auto !important;
   }
 
   .knx-codemirror-host.d-none,
@@ -26,8 +34,9 @@
 
   #editorFallback {
     width: 100%;
-    height: calc(100vh - 300px);
-    min-height: 650px;
+    height: 420px !important;
+    min-height: 420px !important;
+    max-height: 420px !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 0.875rem;
     line-height: 16px !important;
@@ -73,6 +82,57 @@
   .knx-codemirror-host .cm-punctuation,
   .knx-codemirror-host .cm-bracket {
     color: #444 !important;
+  }
+
+  .knx-codemirror-host.knx-json-mode .cm-string {
+    color: #a31515 !important;
+  }
+
+  .knx-codemirror-host.knx-json-mode .cm-number {
+    color: #098658 !important;
+  }
+
+  .knx-codemirror-host.knx-json-mode .cm-atom {
+    color: #0000ff !important;
+  }
+
+  .knx-codemirror-host.knx-json-mode .cm-keyword {
+    color: #0000ff !important;
+  }
+
+  .knx-codemirror-host.knx-json-mode .cm-property {
+    color: #0451a5 !important;
+  }
+
+  .knx-codemirror-host.knx-json-mode .cm-punctuation,
+  .knx-codemirror-host.knx-json-mode .cm-bracket {
+    color: #444 !important;
+  }
+
+  .knx-codemirror-host .CodeMirror {
+    font-size: 13px !important;
+    line-height: 16px !important;
+  }
+
+  .knx-codemirror-host .CodeMirror-lines {
+    padding: 4px 0 !important;
+  }
+
+  .knx-codemirror-host .CodeMirror pre,
+  .knx-codemirror-host .CodeMirror-line,
+  .knx-codemirror-host pre.CodeMirror-line,
+  .knx-codemirror-host pre.CodeMirror-line-like {
+    line-height: 16px !important;
+    min-height: 16px !important;
+    height: 16px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin: 0 !important;
+  }
+
+  .knx-codemirror-host .CodeMirror-linenumber {
+    line-height: 16px !important;
+    height: 16px !important;
   }
 
   .knx-path {
@@ -364,9 +424,16 @@
       return 'text/plain';
     }
 
+    function updateEditorModeClass() {
+      if (cmEditor && cmEditor.getWrapperElement()) {
+        cmEditor.getWrapperElement().classList.toggle('knx-json-mode', currentExtension === '.json');
+      }
+    }
+
     function updateEditorLanguage() {
       if (cmEditor) {
         cmEditor.setOption('mode', editorModeForExtension(currentExtension));
+        updateEditorModeClass();
       }
     }
 
@@ -453,9 +520,11 @@
       if (cmEditor) {
         const wrapper = cmEditor.getWrapperElement();
         if (wrapper) {
-          wrapper.style.height = 'calc(100vh - 300px)';
-          wrapper.style.minHeight = '650px';
+          wrapper.style.height = '420px';
+          wrapper.style.minHeight = '420px';
+          wrapper.style.maxHeight = '420px';
           wrapper.style.display = 'block';
+          updateEditorModeClass();
         }
         requestAnimationFrame(() => cmEditor.refresh());
         setTimeout(() => cmEditor.refresh(), 50);
