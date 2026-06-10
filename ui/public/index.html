@@ -84,6 +84,39 @@
     color: #444 !important;
   }
 
+  .knx-codemirror-host.knx-yaml-mode .cm-def,
+  .knx-codemirror-host.knx-yaml-mode .cm-keyword,
+  .knx-codemirror-host.knx-yaml-mode .cm-atom:first-child {
+    color: #0451a5 !important;
+    font-weight: 600 !important;
+  }
+
+  .knx-codemirror-host.knx-yaml-mode .cm-string {
+    color: #a31515 !important;
+  }
+
+  .knx-codemirror-host.knx-yaml-mode .cm-number {
+    color: #098658 !important;
+  }
+
+  .knx-codemirror-host.knx-yaml-mode .cm-atom {
+    color: #0000ff !important;
+  }
+
+  .knx-codemirror-host.knx-yaml-mode .cm-meta {
+    color: #795e26 !important;
+  }
+
+  .knx-codemirror-host.knx-yaml-mode .cm-comment {
+    color: #008000 !important;
+    font-style: italic;
+  }
+
+  .knx-codemirror-host.knx-yaml-mode .cm-punctuation,
+  .knx-codemirror-host.knx-yaml-mode .cm-bracket {
+    color: #444 !important;
+  }
+
   .knx-codemirror-host.knx-json-mode .cm-string:not(.cm-property) {
     color: #a31515 !important;
     font-weight: 400 !important;
@@ -219,17 +252,12 @@
   <section id="knx-editor-panel" class="tab-pane d-none" role="tabpanel" aria-labelledby="knx-editor-tab">
     <div class="card mb-3">
       <div class="card-body">
-        <div class="row g-2 align-items-end mb-2">
-          <div class="col-md-7">
-            <label class="form-label mb-1" for="configPath"><code>config_path</code></label>
-            <input id="configPath" class="form-control knx-path" type="text" readonly value="Loading...">
-          </div>
+        <input id="configPath" type="hidden" readonly value="Loading...">
 
-          <div id="directoryPanel" class="col-md-5 d-none">
-            <label class="form-label mb-1" for="fileSelect">Configuration file</label>
-            <select id="fileSelect" class="form-select"></select>
-            <div id="directoryMessage" class="form-text"></div>
-          </div>
+        <div id="directoryPanel" class="mb-2 d-none">
+          <label class="form-label mb-1" for="fileSelect">Configuration file</label>
+          <select id="fileSelect" class="form-select"></select>
+          <div id="directoryMessage" class="form-text"></div>
         </div>
 
         <label class="form-label mb-1" for="editorFallback">File content</label>
@@ -425,10 +453,16 @@
 
     function updateEditorModeClass() {
       const isJson = currentExtension === '.json';
+      const isYaml = currentExtension === '.yaml' || currentExtension === '.yml';
       if (isJson) {
         codeMirrorHost.classList.add('knx-json-mode');
       } else {
         codeMirrorHost.classList.remove('knx-json-mode');
+      }
+      if (isYaml) {
+        codeMirrorHost.classList.add('knx-yaml-mode');
+      } else {
+        codeMirrorHost.classList.remove('knx-yaml-mode');
       }
       if (cmEditor && cmEditor.getWrapperElement()) {
         cmEditor.getWrapperElement().classList.toggle('knx-json-mode', isJson);
