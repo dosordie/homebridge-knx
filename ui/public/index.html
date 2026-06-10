@@ -355,6 +355,34 @@
       });
     }
 
+    function loadStylesheet(href) {
+      return new Promise((resolve, reject) => {
+        if ([...document.styleSheets].some((s) => s.href && s.href.includes(href.replace('./', '')))) {
+          resolve();
+          return;
+        }
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = withCacheBust(href);
+        link.onload = resolve;
+        link.onerror = () => reject(new Error(`Unable to load stylesheet ${href}`));
+        document.head.appendChild(link);
+      });
+    }
+
+    let monacoStylesheetPromise = null;
+
+    async function loadMonacoStylesheet() {
+      if (!monacoStylesheetPromise) {
+        const href = `${MONACO_BASE_PATH}/editor/editor.main.css`;
+        monacoStylesheetPromise = loadStylesheet(href).then(() => {
+          console.info(`[homebridge-knx] Monaco CSS loaded from ${href}`);
+        });
+      }
+
+      await monacoStylesheetPromise;
+    }
+
     async function loadBundledMonaco() {
       window.MonacoEnvironment = {
         ...(window.MonacoEnvironment || {}),
@@ -364,6 +392,8 @@
       if (!window.require || typeof window.require.config !== 'function') {
         await loadScript(withCacheBust(`${MONACO_BASE_PATH}/loader.js`));
       }
+
+      await loadMonacoStylesheet();
 
       if (!window.require || typeof window.require.config !== 'function') {
         throw new Error('Bundled Monaco AMD loader did not expose window.require.config.');
@@ -428,6 +458,8 @@
       monacoInitialised = true;
 
       try {
+        await loadMonacoStylesheet();
+
         monacoApi = getExistingMonaco();
         if (!monacoApi || !monacoApi.editor) {
           monacoApi = await loadBundledMonaco();
@@ -447,8 +479,11 @@
           theme: detectTheme(),
           value: editorFallback.value || '',
         });
+        window.knxMonacoEditor = monacoEditor;
+        window.knxMonacoApi = monacoApi;
         applyEditorTheme();
-        layoutEditor();
+        layoutEditorSoon();
+        verifyMonacoEditorChrome();
       } catch (error) {
         fallbackActive = true;
         editorHost.classList.add('d-none');
@@ -469,15 +504,41 @@
       }
     }
 
-    function layoutEditor() {
-      if (monacoEditor) {
-        window.requestAnimationFrame(() => {
-          monacoEditor.layout();
-          fixScrollHeight();
-        });
-      } else {
+    function layoutEditorSoon() {
+      if (!monacoEditor) {
         fixScrollHeight();
+        return;
       }
+      requestAnimationFrame(() => {
+        monacoEditor.layout();
+        fixScrollHeight();
+      });
+      setTimeout(() => monacoEditor.layout(), 50);
+      setTimeout(() => monacoEditor.layout(), 250);
+      setTimeout(() => monacoEditor.layout(), 1000);
+    }
+
+    function layoutEditor() {
+      layoutEditorSoon();
+    }
+
+    function verifyMonacoEditorChrome() {
+      requestAnimationFrame(() => {
+        if (monacoEditor) {
+          monacoEditor.layout();
+        }
+
+        const hasMonacoEditor = Boolean(editorHost.querySelector('.monaco-editor'));
+        const hasLineNumbers = Boolean(editorHost.querySelector('.line-numbers'));
+
+        if (!hasMonacoEditor || !hasLineNumbers) {
+          console.warn('[homebridge-knx] Monaco editor chrome was not found after layout.', {
+            hasMonacoEditor,
+            hasLineNumbers,
+            html: editorHost.innerHTML.slice(0, 500),
+          });
+        }
+      });
     }
 
     function setActiveTab(panelId) {
@@ -494,10 +555,11 @@
       }
 
       if (panelId === 'knx-editor-panel') {
-        ensureCodeEditor().then(layoutEditor);
         if (!editorLoaded) {
           editorLoaded = true;
           loadConfigMetadata();
+        } else {
+          layoutEditorSoon();
         }
       }
 
@@ -655,9 +717,10 @@
           updateCurrentFile(response.file);
         }
         setEditorValue(response.content || '');
-        setStatus(`Loaded ${response.file.relative}.`, fallbackActive ? 'warning' : 'success');
         if (fallbackActive) {
-          setStatus(`Loaded ${response.file.relative}. Monaco is unavailable; using textarea fallback.`, 'warning');
+          setStatus(`Loaded ${response.file.relative}. Textarea fallback active.`, 'warning');
+        } else {
+          setStatus(`Loaded ${response.file.relative}. Monaco editor active.`, 'success');
         }
         setBusy(false);
       } catch (error) {
