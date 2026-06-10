@@ -531,8 +531,17 @@
       layoutEditorSoon();
     }
 
+    function isVisibleElement(element) {
+      if (!element) {
+        return false;
+      }
+
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    }
+
     function isMonacoActuallyRendered() {
-      if (!monacoEditor || !editorHost) {
+      if (!monacoEditor || !editorHost || fallbackActive || editorHost.classList.contains('d-none') || !isVisibleElement(editorHost)) {
         return false;
       }
 
@@ -542,13 +551,15 @@
         Boolean(editorHost.querySelector('.overflow-guard')) ||
         Boolean(editorHost.querySelector('.monaco-scrollable-element'));
 
-      const hasContent =
+      const hasMonacoContent =
         Boolean(editorHost.querySelector('.view-lines')) ||
         Boolean(editorHost.querySelector('.view-line')) ||
         Boolean(editorHost.querySelector('.line-numbers')) ||
         Boolean(editorHost.querySelector('.margin'));
 
-      return hasEditorShell && hasContent;
+      const hasBundledEditorContent = Boolean(editorHost.querySelector('textarea.monaco-mouse-cursor-text'));
+
+      return hasEditorShell && (hasMonacoContent || hasBundledEditorContent);
     }
 
     function wait(ms) {
