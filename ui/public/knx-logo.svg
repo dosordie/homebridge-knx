@@ -1,16 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 112" role="img" aria-labelledby="title desc">
   <title id="title">KNX wordmark</title>
-  <desc id="desc">A compact green KNX wordmark for the homebridge-knx plugin UI.</desc>
+  <desc id="desc">A bright green KNX wordmark with transparent background and a distinct N.</desc>
   <defs>
     <linearGradient id="knxGreen" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#72ff93"/>
-      <stop offset="0.5" stop-color="#21d85b"/>
-      <stop offset="1" stop-color="#0d8f3d"/>
+      <stop offset="0" stop-color="#7dff9b"/>
+      <stop offset="0.46" stop-color="#20d65a"/>
+      <stop offset="1" stop-color="#008f3a"/>
     </linearGradient>
   </defs>
   <g fill="url(#knxGreen)">
-    <path d="M10 20h29v29l31-29h37L63 61l47 31H70L39 69v23H10V20Z"/>
-    <path d="M113 20h27l55 48V20h29v72h-25l-57-50v50h-29V20Z"/>
-    <path d="M221 20h34l22 24 22-24h35l-39 36 41 36h-36l-24-24-24 24h-35l41-36-37-36Z" transform="translate(-80 0)"/>
+    <path d="M14 18h24v30l34-30h34L62 55l48 39H75L38 64v30H14V18Z"/>
+    <path d="M116 18h25l48 45V18h25v76h-23L141 47v47h-25V18Z"/>
+    <path d="M145 26h12l45 42V56l-45-42h-12v12Z" opacity="0.22"/>
+    <path d="M219 18h29l26 28 26-28h30l-41 38 43 38h-31l-28-27-28 27h-30l43-38-39-38Z" transform="translate(-72 0)"/>
   </g>
 </svg>
