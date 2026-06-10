@@ -256,22 +256,29 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
         const content = typeof payload.content === 'string' ? payload.content : '';
         this.validateContent(target.realPath, content);
 
+        let backupPath;
         try {
-            const backupPath = await this.createBackup(target.realPath);
+            backupPath = await this.createBackup(target.realPath);
             await this.writeExternalConfigFile(target.realPath, content);
-            await this.repairExternalConfigPermissions(target.realPath);
-            await this.pruneBackups(target.realPath);
-
-            this.log(`Saved KNX config file: ${target.realPath}`);
-            return {
-                saved: true,
-                message: 'Configuration saved. Restart Homebridge after changes.',
-                backup: path.basename(backupPath),
-            };
         } catch (error) {
             this.log(`Unable to save KNX config file ${target.realPath}: ${error.message}`);
             throw this.requestError(this.friendlyFsError(error, 'write'), 500, error.code || 'Save failed');
         }
+
+        await this.repairExternalConfigPermissions(target.realPath);
+
+        try {
+            await this.pruneBackups(target.realPath);
+        } catch (error) {
+            this.log(`Unable to prune backups for KNX config file ${target.realPath}: ${error.message}`);
+        }
+
+        this.log(`Saved KNX config file: ${target.realPath}`);
+        return {
+            saved: true,
+            message: 'Configuration saved. Restart Homebridge after changes.',
+            backup: path.basename(backupPath),
+        };
     }
 
     async readHomebridgeConfig() {
@@ -490,8 +497,17 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
     }
 
     async repairExternalConfigPermissions(filePath) {
-        await this.inheritDirectoryGroupIfPossible(filePath);
-        await fsp.chmod(filePath, 0o664);
+        try {
+            await this.inheritDirectoryGroupIfPossible(filePath);
+        } catch (error) {
+            this.log(`Unable to inherit group for KNX config file ${filePath}: ${error.message}`);
+        }
+
+        try {
+            await fsp.chmod(filePath, 0o664);
+        } catch (error) {
+            this.log(`Unable to chmod KNX config file ${filePath}: ${error.message}`);
+        }
     }
 
     async inheritDirectoryGroupIfPossible(filePath) {
