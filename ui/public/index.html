@@ -622,6 +622,10 @@
         setEditorValue(response.content || '');
         updateLoadedFileStatus(response.file.relative);
         setBusy(false);
+        if (cmEditor && selectedFile) {
+          cmEditor.setOption('readOnly', false);
+          refreshEditorSoon();
+        }
         refreshEditorSoon();
         setTimeout(() => refreshEditorSoon(), 50);
       } catch (error) {
