@@ -1,8 +1,9 @@
-#homebridge-knx Version v0.5.0-beta.13-dosordie.1  
+homebridge-knx Version v0.5.0-beta.13-dosordie.5
 
 
 Fix Für HB 2.0.0, nicht abwärtskompatibel! 
 Nur mit KNX Rounting getestet, nicht per KNXd
+Config UI Editor aktuell in Arbeit
 
 
 
