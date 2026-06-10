@@ -20,46 +20,141 @@
   }
 </style>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <h5 class="card-title mb-3">KNX External Configuration Editor</h5>
-    <p class="mb-2">
-      Edit the external KNX configuration referenced by <code>config_path</code> in the first KNX platform instance.
-    </p>
-    <div class="alert alert-info mb-0">
-      <strong>Restart Homebridge after changes.</strong> Saving this file does not restart Homebridge automatically.
-    </div>
-  </div>
-</div>
+<ul class="nav nav-tabs mb-3" id="knxTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="plugin-settings-tab" type="button" role="tab" aria-controls="plugin-settings-panel" aria-selected="true" data-knx-tab="plugin-settings-panel">
+      Plugin Einstellungen
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="knx-editor-tab" type="button" role="tab" aria-controls="knx-editor-panel" aria-selected="false" data-knx-tab="knx-editor-panel">
+      KNX Config Editor
+    </button>
+  </li>
+</ul>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <div class="mb-3">
-      <label class="form-label" for="configPath">Configured <code>config_path</code></label>
-      <input id="configPath" class="form-control knx-path" type="text" readonly value="Loading...">
-    </div>
-
-    <div id="directoryPanel" class="mb-3 d-none">
-      <label class="form-label" for="fileSelect">Configuration file</label>
-      <select id="fileSelect" class="form-select"></select>
-      <div id="directoryMessage" class="form-text"></div>
-    </div>
-
-    <div class="knx-editor-toolbar mb-3">
-      <button id="reloadButton" type="button" class="btn btn-secondary">Reload</button>
-      <button id="validateButton" type="button" class="btn btn-primary" disabled>Validate</button>
-      <button id="saveButton" type="button" class="btn btn-success" disabled>Save</button>
+<div class="tab-content">
+  <section id="plugin-settings-panel" class="tab-pane active" role="tabpanel" aria-labelledby="plugin-settings-tab">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Plugin Einstellungen</h5>
+        <p class="mb-2">
+          Edit the first Homebridge platform entry with <code>platform === "KNX"</code>. External KNX device configuration stays in the separate editor tab.
+        </p>
+        <div class="alert alert-info mb-0">
+          <strong>Homebridge restart required.</strong> Saving plugin settings updates <code>config.json</code>, but does not restart Homebridge automatically.
+        </div>
+      </div>
     </div>
 
-    <div id="status" class="alert alert-secondary" role="alert">Loading KNX configuration...</div>
+    <div class="card mb-3">
+      <div class="card-body">
+        <form id="platformConfigForm" novalidate>
+          <div class="mb-3">
+            <label class="form-label" for="platformName">name</label>
+            <input id="platformName" class="form-control" type="text" autocomplete="off">
+          </div>
 
-    <label class="form-label" for="editor">File content</label>
-    <textarea id="editor" class="form-control" spellcheck="false" disabled></textarea>
-  </div>
+          <div class="mb-3">
+            <label class="form-label" for="platformConfigPath">config_path</label>
+            <input id="platformConfigPath" class="form-control knx-path" type="text" required autocomplete="off">
+            <div class="form-text">Path to the external JSON/YAML KNX device configuration file or directory.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="platformKnxConnection">knxconnection</label>
+            <select id="platformKnxConnection" class="form-select" required>
+              <option value="knxd">knxd</option>
+              <option value="knxjs">knxjs</option>
+            </select>
+          </div>
+
+          <div id="knxdFields">
+            <div class="mb-3">
+              <label class="form-label" for="platformKnxdIp">knxd_ip</label>
+              <input id="platformKnxdIp" class="form-control" type="text" autocomplete="off">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="platformKnxdPort">knxd_port</label>
+              <input id="platformKnxdPort" class="form-control" type="number" min="1" max="65535" step="1">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="platformKnxPhyAddr">knx_phy_addr</label>
+            <input id="platformKnxPhyAddr" class="form-control" type="text" autocomplete="off">
+          </div>
+
+          <div class="knx-editor-toolbar mb-3">
+            <button id="platformReloadButton" type="button" class="btn btn-secondary">Reload</button>
+            <button id="platformSaveButton" type="submit" class="btn btn-success">Save Plugin Einstellungen</button>
+          </div>
+        </form>
+
+        <div id="platformStatus" class="alert alert-secondary" role="alert">Loading plugin settings...</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="knx-editor-panel" class="tab-pane d-none" role="tabpanel" aria-labelledby="knx-editor-tab">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title mb-3">KNX Config Editor</h5>
+        <p class="mb-2">
+          Edit the external KNX configuration referenced by <code>config_path</code> in the saved KNX platform settings.
+        </p>
+        <div class="alert alert-info mb-0">
+          <strong>Restart Homebridge after changes.</strong> Saving this file does not restart Homebridge automatically.
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label" for="configPath">Configured <code>config_path</code></label>
+          <input id="configPath" class="form-control knx-path" type="text" readonly value="Loading...">
+        </div>
+
+        <div id="directoryPanel" class="mb-3 d-none">
+          <label class="form-label" for="fileSelect">Configuration file</label>
+          <select id="fileSelect" class="form-select"></select>
+          <div id="directoryMessage" class="form-text"></div>
+        </div>
+
+        <div class="knx-editor-toolbar mb-3">
+          <button id="reloadButton" type="button" class="btn btn-secondary">Reload</button>
+          <button id="validateButton" type="button" class="btn btn-primary" disabled>Validate</button>
+          <button id="saveButton" type="button" class="btn btn-success" disabled>Save</button>
+        </div>
+
+        <div id="status" class="alert alert-secondary" role="alert">Open this tab to load the KNX configuration.</div>
+
+        <label class="form-label" for="editor">File content</label>
+        <textarea id="editor" class="form-control" spellcheck="false" disabled></textarea>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script>
   (() => {
+    const tabButtons = Array.from(document.querySelectorAll('[data-knx-tab]'));
+    const tabPanels = Array.from(document.querySelectorAll('.tab-pane'));
+
+    const platformForm = document.getElementById('platformConfigForm');
+    const platformName = document.getElementById('platformName');
+    const platformConfigPath = document.getElementById('platformConfigPath');
+    const platformKnxConnection = document.getElementById('platformKnxConnection');
+    const knxdFields = document.getElementById('knxdFields');
+    const platformKnxdIp = document.getElementById('platformKnxdIp');
+    const platformKnxdPort = document.getElementById('platformKnxdPort');
+    const platformKnxPhyAddr = document.getElementById('platformKnxPhyAddr');
+    const platformStatus = document.getElementById('platformStatus');
+    const platformReloadButton = document.getElementById('platformReloadButton');
+    const platformSaveButton = document.getElementById('platformSaveButton');
+
     const configPathInput = document.getElementById('configPath');
     const directoryPanel = document.getElementById('directoryPanel');
     const directoryMessage = document.getElementById('directoryMessage');
@@ -72,13 +167,33 @@
 
     let mode = null;
     let selectedFile = null;
+    let editorLoaded = false;
+
+    function fixScrollHeight() {
+      if (window.homebridge && typeof homebridge.fixScrollHeight === 'function') {
+        homebridge.fixScrollHeight();
+      }
+    }
+
+    function setPlatformStatus(message, type = 'secondary') {
+      platformStatus.className = `alert alert-${type}`;
+      platformStatus.textContent = message;
+      fixScrollHeight();
+    }
 
     function setStatus(message, type = 'secondary') {
       status.className = `alert alert-${type}`;
       status.textContent = message;
-      if (window.homebridge && typeof homebridge.fixScrollHeight === 'function') {
-        homebridge.fixScrollHeight();
+      fixScrollHeight();
+    }
+
+    function setPlatformBusy(busy) {
+      platformReloadButton.disabled = busy;
+      platformSaveButton.disabled = busy;
+      for (const input of platformForm.querySelectorAll('input, select')) {
+        input.disabled = busy;
       }
+      updateKnxdVisibility();
     }
 
     function setBusy(busy) {
@@ -86,6 +201,14 @@
       validateButton.disabled = busy || !selectedFile;
       saveButton.disabled = busy || !selectedFile;
       editor.disabled = busy || !selectedFile;
+    }
+
+    function showPlatformError(error) {
+      const message = error && error.message ? error.message : String(error);
+      setPlatformStatus(message, 'danger');
+      if (window.homebridge && homebridge.toast && homebridge.toast.error) {
+        homebridge.toast.error(message, 'Plugin Einstellungen');
+      }
     }
 
     function showError(error) {
@@ -102,12 +225,92 @@
       };
     }
 
+    function updateKnxdVisibility() {
+      const usesKnxd = platformKnxConnection.value === 'knxd';
+      knxdFields.classList.toggle('d-none', !usesKnxd);
+      platformKnxdIp.disabled = !usesKnxd || platformSaveButton.disabled;
+      platformKnxdPort.disabled = !usesKnxd || platformSaveButton.disabled;
+      fixScrollHeight();
+    }
+
+    function setActiveTab(panelId) {
+      for (const button of tabButtons) {
+        const active = button.dataset.knxTab === panelId;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      }
+
+      for (const panel of tabPanels) {
+        const active = panel.id === panelId;
+        panel.classList.toggle('active', active);
+        panel.classList.toggle('d-none', !active);
+      }
+
+      if (panelId === 'knx-editor-panel' && !editorLoaded) {
+        editorLoaded = true;
+        loadConfigMetadata();
+      }
+
+      fixScrollHeight();
+    }
+
     async function initialise() {
       if (window.homebridge && typeof homebridge.disableSaveButton === 'function') {
         homebridge.disableSaveButton();
       }
 
-      await loadConfigMetadata();
+      updateKnxdVisibility();
+      await loadPlatformConfig();
+    }
+
+    async function loadPlatformConfig() {
+      setPlatformBusy(true);
+      setPlatformStatus('Loading plugin settings...', 'secondary');
+
+      try {
+        const response = await homebridge.request('/platform-config/load');
+        const config = response.config || {};
+        platformName.value = config.name || '';
+        platformConfigPath.value = config.config_path || '';
+        platformKnxConnection.value = config.knxconnection === 'knxjs' ? 'knxjs' : 'knxd';
+        platformKnxdIp.value = config.knxd_ip || '';
+        platformKnxdPort.value = config.knxd_port || 6720;
+        platformKnxPhyAddr.value = config.knx_phy_addr || '';
+        setPlatformStatus('Plugin settings loaded.', 'success');
+      } catch (error) {
+        showPlatformError(error);
+      } finally {
+        setPlatformBusy(false);
+      }
+    }
+
+    async function savePlatformConfig(event) {
+      event.preventDefault();
+      setPlatformBusy(true);
+      setPlatformStatus('Validating and saving plugin settings...', 'secondary');
+
+      try {
+        const response = await homebridge.request('/platform-config/save', {
+          config: {
+            name: platformName.value,
+            config_path: platformConfigPath.value,
+            knxconnection: platformKnxConnection.value,
+            knxd_ip: platformKnxdIp.value,
+            knxd_port: platformKnxdPort.value,
+            knx_phy_addr: platformKnxPhyAddr.value,
+          },
+        });
+        const backup = response.backup ? ` Backup: ${response.backup}.` : '';
+        setPlatformStatus(`${response.message || 'Homebridge restart required.'}${backup}`, 'success');
+        editorLoaded = false;
+        if (window.homebridge && homebridge.toast && homebridge.toast.success) {
+          homebridge.toast.success('Homebridge restart required.', 'Plugin Einstellungen');
+        }
+      } catch (error) {
+        showPlatformError(error);
+      } finally {
+        setPlatformBusy(false);
+      }
     }
 
     async function loadConfigMetadata() {
@@ -117,7 +320,7 @@
       selectedFile = null;
 
       try {
-        const response = await homebridge.request('/config');
+        const response = await homebridge.request('/external-config/metadata');
         mode = response.mode;
         configPathInput.value = response.configPath || '';
 
@@ -171,7 +374,7 @@
       setStatus('Loading file...', 'secondary');
 
       try {
-        const response = await homebridge.request('/load', currentPayload());
+        const response = await homebridge.request('/external-config/load', currentPayload());
         if (response.mode === 'directory') {
           setStatus(response.message || 'Select a file first.', 'warning');
           setBusy(false);
@@ -192,7 +395,7 @@
       setStatus('Validating...', 'secondary');
 
       try {
-        const response = await homebridge.request('/validate', {
+        const response = await homebridge.request('/external-config/validate', {
           ...currentPayload(),
           content: editor.value,
         });
@@ -212,7 +415,7 @@
       setStatus('Validating and saving...', 'secondary');
 
       try {
-        const response = await homebridge.request('/save', {
+        const response = await homebridge.request('/external-config/save', {
           ...currentPayload(),
           content: editor.value,
         });
@@ -228,6 +431,14 @@
       }
     }
 
+    for (const button of tabButtons) {
+      button.addEventListener('click', () => setActiveTab(button.dataset.knxTab));
+    }
+
+    platformKnxConnection.addEventListener('change', updateKnxdVisibility);
+    platformForm.addEventListener('submit', savePlatformConfig);
+    platformReloadButton.addEventListener('click', loadPlatformConfig);
+
     fileSelect.addEventListener('change', async () => {
       selectedFile = fileSelect.value;
       await loadFile();
@@ -240,7 +451,7 @@
     if (window.homebridge) {
       homebridge.addEventListener('ready', initialise);
     } else {
-      setStatus('Homebridge UI API is not available.', 'danger');
+      setPlatformStatus('Homebridge UI API is not available.', 'danger');
     }
   })();
 </script>
