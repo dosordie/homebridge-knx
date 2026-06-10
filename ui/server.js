@@ -38,12 +38,31 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
 
 
     async handlePlatformConfigLoadRequest() {
-        const { platformConfig, index } = await this.getFirstKnxPlatformConfigWithDocument();
+        const requestId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        this.log(`[${requestId}] platform-config/load start`);
 
-        return {
-            index,
-            config: this.toPlatformConfigResponse(platformConfig),
-        };
+        try {
+            const result = await this.withTimeout(
+                this.getFirstKnxPlatformConfigWithDocumentLogged(requestId),
+                3000,
+                `[${requestId}] platform-config/load`,
+            );
+
+            this.log(`[${requestId}] platform-config/load success`);
+
+            return {
+                index: result.index,
+                config: this.toPlatformConfigResponse(result.platformConfig),
+            };
+        } catch (error) {
+            this.log(`[${requestId}] platform-config/load failed: ${error.stack || error.message}`);
+
+            throw this.requestError(
+                `Unable to load KNX platform config: ${error.message}`,
+                500,
+                'Platform config load failed',
+            );
+        }
     }
 
     async handlePlatformConfigSaveRequest(payload) {
@@ -300,6 +319,50 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
         }
     }
 
+    async withTimeout(promise, timeoutMs, label) {
+        let timer;
+
+        try {
+            return await Promise.race([
+                promise,
+                new Promise((_, reject) => {
+                    timer = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+                }),
+            ]);
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    async readHomebridgeConfigLogged(requestId) {
+        const filePath = this.getHomebridgeConfigPath();
+        this.log(`[${requestId}] config path: ${filePath}`);
+
+        let rawConfig;
+        try {
+            this.log(`[${requestId}] readFile start`);
+            rawConfig = await this.withTimeout(
+                fsp.readFile(filePath, 'utf8'),
+                2000,
+                `[${requestId}] readFile ${filePath}`,
+            );
+            this.log(`[${requestId}] readFile done, bytes: ${rawConfig.length}`);
+        } catch (error) {
+            this.log(`[${requestId}] readFile failed: ${error.stack || error.message}`);
+            throw this.requestError('Unable to read Homebridge config.json.', 500, 'Config read failed');
+        }
+
+        try {
+            this.log(`[${requestId}] JSON.parse start`);
+            const parsed = JSON.parse(rawConfig);
+            this.log(`[${requestId}] JSON.parse done`);
+            return { config: parsed, filePath };
+        } catch (error) {
+            this.log(`[${requestId}] JSON.parse failed: ${error.stack || error.message}`);
+            throw this.requestError(`Invalid Homebridge config.json: ${error.message}`, 400, 'Invalid JSON');
+        }
+    }
+
     getHomebridgeConfigPath() {
         const filePath = this.homebridgeConfigPath || process.env.HOMEBRIDGE_CONFIG_PATH;
 
@@ -314,6 +377,24 @@ class KnxConfigUiServer extends HomebridgePluginUiServer {
         const { config, filePath } = await this.readHomebridgeConfig();
         const platforms = Array.isArray(config.platforms) ? config.platforms : [];
         const index = platforms.findIndex((entry) => entry && entry.platform === PLUGIN_ALIAS);
+
+        if (index === -1) {
+            throw this.requestError('No KNX platform config found in Homebridge config.json.', 404, 'KNX config not found');
+        }
+
+        return { config, filePath, platformConfig: platforms[index], index };
+    }
+
+    async getFirstKnxPlatformConfigWithDocumentLogged(requestId) {
+        this.log(`[${requestId}] readHomebridgeConfig start`);
+        const { config, filePath } = await this.readHomebridgeConfigLogged(requestId);
+        this.log(`[${requestId}] readHomebridgeConfig done: ${filePath}`);
+
+        const platforms = Array.isArray(config.platforms) ? config.platforms : [];
+        this.log(`[${requestId}] platforms count: ${platforms.length}`);
+
+        const index = platforms.findIndex((entry) => entry && entry.platform === PLUGIN_ALIAS);
+        this.log(`[${requestId}] KNX platform index: ${index}`);
 
         if (index === -1) {
             throw this.requestError('No KNX platform config found in Homebridge config.json.', 404, 'KNX config not found');
