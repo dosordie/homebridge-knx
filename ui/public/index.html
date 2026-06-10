@@ -325,6 +325,9 @@
     let cmEditor = null;
     let codeMirrorInitialised = false;
     let codeMirrorAvailable = false;
+    let platformConfigLoading = false;
+    let configMetadataLoading = false;
+    let initialiseRunning = false;
 
     function pluginVersion() {
       return (
@@ -586,7 +589,7 @@
       }
     }
 
-    function setActiveTab(panelId) {
+    async function setActiveTab(panelId) {
       for (const button of tabButtons) {
         const active = button.dataset.knxTab === panelId;
         button.classList.toggle('active', active);
@@ -599,29 +602,58 @@
         panel.classList.toggle('d-none', !active);
       }
 
+      if (panelId === 'plugin-settings-panel') {
+        await loadPlatformConfig();
+      }
+
       if (panelId === 'knx-editor-panel') {
-        if (!editorLoaded) {
-          editorLoaded = true;
-          loadConfigMetadata();
-        } else {
-          refreshEditorSoon();
-        }
+        editorLoaded = false;
+        await loadConfigMetadata();
+        editorLoaded = true;
       }
 
       refreshEditorSoon();
       fixScrollHeight();
     }
 
-    async function initialise() {
-      if (window.homebridge && typeof homebridge.disableSaveButton === 'function') {
-        homebridge.disableSaveButton();
+    async function safeInitialise(reason = 'initial') {
+      if (initialiseRunning) return;
+      if (!window.homebridge || typeof homebridge.request !== 'function') {
+        setTimeout(() => safeInitialise(reason), 200);
+        return;
       }
 
-      updateKnxdVisibility();
-      await loadPlatformConfig();
+      initialiseRunning = true;
+      try {
+        if (typeof homebridge.disableSaveButton === 'function') {
+          homebridge.disableSaveButton();
+        }
+
+        updateKnxdVisibility();
+        await loadPlatformConfig();
+
+        const editorPanelActive = document
+          .getElementById('knx-editor-panel')
+          ?.classList.contains('active');
+
+        if (editorPanelActive) {
+          editorLoaded = false;
+          await loadConfigMetadata();
+          editorLoaded = true;
+        }
+      } catch (error) {
+        console.warn('[homebridge-knx] initialise failed', reason, error);
+      } finally {
+        initialiseRunning = false;
+        refreshEditorSoon();
+        fixScrollHeight();
+      }
     }
 
     async function loadPlatformConfig() {
+      if (platformConfigLoading) return;
+
+      platformConfigLoading = true;
       setPlatformBusy(true);
       setPlatformStatus('Loading plugin settings...', 'secondary');
 
@@ -638,6 +670,7 @@
       } catch (error) {
         showPlatformError(error);
       } finally {
+        platformConfigLoading = false;
         setPlatformBusy(false);
       }
     }
@@ -684,6 +717,9 @@
     }
 
     async function loadConfigMetadata() {
+      if (configMetadataLoading) return;
+
+      configMetadataLoading = true;
       await ensureCodeEditor();
       setBusy(true);
       setStatus('Loading KNX configuration metadata...', 'secondary');
@@ -735,6 +771,7 @@
         showError(error);
         setBusy(false);
       } finally {
+        configMetadataLoading = false;
         layoutEditor();
       }
     }
@@ -832,7 +869,9 @@
     }
 
     for (const button of tabButtons) {
-      button.addEventListener('click', () => setActiveTab(button.dataset.knxTab));
+      button.addEventListener('click', () => {
+        setActiveTab(button.dataset.knxTab);
+      });
     }
 
     platformKnxConnection.addEventListener('change', updateKnxdVisibility);
@@ -852,11 +891,20 @@
     validateButton.addEventListener('click', validateFile);
     saveButton.addEventListener('click', saveFile);
     window.addEventListener('resize', layoutEditor);
+    window.addEventListener('pageshow', () => safeInitialise('pageshow'));
 
-    if (window.homebridge) {
-      homebridge.addEventListener('ready', initialise);
-    } else {
-      setPlatformStatus('Homebridge UI API is not available.', 'danger');
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) safeInitialise('visible');
+    });
+
+    window.addEventListener('focus', () => {
+      safeInitialise('focus');
+    });
+
+    if (window.homebridge && typeof homebridge.addEventListener === 'function') {
+      homebridge.addEventListener('ready', () => safeInitialise('ready'));
     }
+
+    safeInitialise('script-load');
   })();
 </script>
