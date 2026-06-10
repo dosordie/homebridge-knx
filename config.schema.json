@@ -2,7 +2,7 @@
     "pluginAlias": "KNX",
     "pluginType": "platform",
     "singular": false,
-    "headerDisplay": "Configurable KNX interface for homebridge",
+    "headerDisplay": "Configure KNX platform instances, bus access, and external JSON/YAML KNX files from the Homebridge UI.",
     "footerDisplay": "",
     "schema": {
         "type": "object",

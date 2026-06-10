@@ -1,10 +1,11 @@
 {
     "name": "homebridge-knx",
-    "version": "0.5.0-beta.13-dosordie.7",
-    "description": "Homebridge KNX plugin fork with Homebridge 2.x and knxjs fixes.",
+    "version": "0.5.0-beta.13-dosordie.8",
+    "description": "Homebridge KNX platform plugin fork with Homebridge 2.x support, custom configuration UI, YAML/JSON config editing, and knxjs fixes.",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "check": "find . -path './node_modules' -prune -o -path './ui/public/vendor' -prune -o -name '*.js' -print | sort | xargs -r -n1 node --check",
+        "test": "npm run check",
         "start": "echo \"Error: configure and run homebridge to start\" && exit 1"
     },
     "engines": {
