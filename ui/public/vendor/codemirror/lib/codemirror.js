@@ -9,6 +9,7 @@
   var modes = Object.create(null);
   var mimeModes = Object.create(null);
   var optionHandlers = Object.create(null);
+  var operation_group = null;
 
   function copyOptions(options) {
     var result = {};
@@ -45,6 +46,7 @@
     this.value = this.options.value != null
       ? String(this.options.value)
       : (sourceTextarea ? sourceTextarea.value : '');
+    this.cursor = { line: 0, ch: 0 };
 
     this.wrapper = document.createElement('div');
     this.wrapper.className = 'CodeMirror cm-s-default';
@@ -101,6 +103,43 @@
 
   Editor.prototype.setValue = function (value) {
     this.value = String(value == null ? '' : value);
+    this.setCursor(this.lineCount() - 1, splitLines(this.value)[this.lineCount() - 1].length);
+    if (this.sourceTextarea) this.sourceTextarea.value = this.value;
+    this.refresh();
+    this.signal('change', this);
+  };
+
+  Editor.prototype.lineCount = function () {
+    return splitLines(this.value).length;
+  };
+
+  Editor.prototype.getCursor = function () {
+    return { line: this.cursor.line, ch: this.cursor.ch };
+  };
+
+  Editor.prototype.setCursor = function (line, ch) {
+    var pos = typeof line === 'object' ? line : { line: line, ch: ch };
+    var lines = splitLines(this.value);
+    var nextLine = Math.max(0, Math.min(Number(pos.line) || 0, lines.length - 1));
+    var nextCh = Math.max(0, Math.min(Number(pos.ch) || 0, lines[nextLine].length));
+    this.cursor = { line: nextLine, ch: nextCh };
+  };
+
+  Editor.prototype.replaceRange = function (replacement, from, to) {
+    var lines = splitLines(this.value);
+    function indexFromPos(pos) {
+      var line = Math.max(0, Math.min(Number(pos && pos.line) || 0, lines.length - 1));
+      var ch = Math.max(0, Math.min(Number(pos && pos.ch) || 0, lines[line].length));
+      var index = ch;
+      for (var i = 0; i < line; i += 1) index += lines[i].length + 1;
+      return index;
+    }
+    var start = indexFromPos(from || this.cursor);
+    var end = to ? indexFromPos(to) : start;
+    var text = String(replacement == null ? '' : replacement);
+    this.value = this.value.slice(0, start) + text + this.value.slice(end);
+    var beforeCursor = this.value.slice(0, start + text.length).split('\n');
+    this.setCursor(beforeCursor.length - 1, beforeCursor[beforeCursor.length - 1].length);
     if (this.sourceTextarea) this.sourceTextarea.value = this.value;
     this.refresh();
     this.signal('change', this);
@@ -185,7 +224,12 @@
   };
 
   Editor.prototype.operation = function (fn) {
-    return fn();
+    operation_group = operation_group || {};
+    try {
+      return fn();
+    } finally {
+      operation_group = null;
+    }
   };
 
   Editor.prototype.getWrapperElement = function () {
