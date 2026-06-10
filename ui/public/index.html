@@ -11,8 +11,8 @@
   }
 
   .knx-codemirror-host .CodeMirror {
-    height: 520px;
-    min-height: 520px;
+    height: calc(100vh - 300px);
+    min-height: 650px;
     border: 1px solid var(--bs-border-color, #ced4da);
     border-radius: 0.375rem;
     font-size: 0.875rem;
@@ -26,11 +26,53 @@
 
   #editorFallback {
     width: 100%;
-    min-height: 520px;
+    height: calc(100vh - 300px);
+    min-height: 650px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 0.875rem;
-    line-height: 1.35;
+    line-height: 16px !important;
     tab-size: 4;
+  }
+
+  .knx-codemirror-host .CodeMirror,
+  .knx-codemirror-host .CodeMirror pre,
+  .knx-codemirror-host .CodeMirror-line,
+  .knx-codemirror-host pre.CodeMirror-line,
+  .knx-codemirror-host pre.CodeMirror-line-like,
+  .knx-codemirror-host .CodeMirror-linenumber {
+    line-height: 16px !important;
+    min-height: 16px !important;
+  }
+
+  .knx-codemirror-host .cm-property {
+    color: #0451a5 !important;
+  }
+
+  .knx-codemirror-host .cm-string {
+    color: #a31515 !important;
+  }
+
+  .knx-codemirror-host .cm-number {
+    color: #098658 !important;
+  }
+
+  .knx-codemirror-host .cm-atom {
+    color: #0000ff !important;
+  }
+
+  .knx-codemirror-host .cm-keyword {
+    color: #0000ff !important;
+  }
+
+  .knx-codemirror-host .cm-def,
+  .knx-codemirror-host .cm-variable,
+  .knx-codemirror-host .cm-variable-2 {
+    color: #001080 !important;
+  }
+
+  .knx-codemirror-host .cm-punctuation,
+  .knx-codemirror-host .cm-bracket {
+    color: #444 !important;
   }
 
   .knx-path {
@@ -118,41 +160,33 @@
   <section id="knx-editor-panel" class="tab-pane d-none" role="tabpanel" aria-labelledby="knx-editor-tab">
     <div class="card mb-3">
       <div class="card-body">
-        <h5 class="card-title mb-3">KNX Config Editor</h5>
-        <p class="mb-2">
-          Edit the external KNX configuration referenced by <code>config_path</code> in the saved KNX platform settings.
-        </p>
-        <div class="alert alert-info mb-0">
-          <strong>Restart Homebridge after changes.</strong> Saving this file does not restart Homebridge automatically.
-        </div>
-      </div>
-    </div>
+        <div class="row g-2 align-items-end mb-2">
+          <div class="col-md-7">
+            <label class="form-label mb-1" for="configPath"><code>config_path</code></label>
+            <input id="configPath" class="form-control knx-path" type="text" readonly value="Loading...">
+          </div>
 
-    <div class="card mb-3">
-      <div class="card-body">
-        <div class="mb-3">
-          <label class="form-label" for="configPath">Configured <code>config_path</code></label>
-          <input id="configPath" class="form-control knx-path" type="text" readonly value="Loading...">
+          <div id="directoryPanel" class="col-md-5 d-none">
+            <label class="form-label mb-1" for="fileSelect">Configuration file</label>
+            <select id="fileSelect" class="form-select"></select>
+            <div id="directoryMessage" class="form-text"></div>
+          </div>
         </div>
 
-        <div id="directoryPanel" class="mb-3 d-none">
-          <label class="form-label" for="fileSelect">Configuration file</label>
-          <select id="fileSelect" class="form-select"></select>
-          <div id="directoryMessage" class="form-text"></div>
-        </div>
-
-        <div class="knx-editor-toolbar mb-3">
-          <button id="reloadButton" type="button" class="btn btn-secondary">Reload</button>
-          <button id="formatJsonButton" type="button" class="btn btn-outline-secondary d-none" disabled>Format JSON</button>
-          <button id="validateButton" type="button" class="btn btn-primary" disabled>Validate</button>
-          <button id="saveButton" type="button" class="btn btn-success" disabled>Save</button>
-        </div>
-
-        <div id="status" class="alert alert-secondary" role="alert">Open this tab to load the KNX configuration.</div>
-
-        <label class="form-label" for="editorFallback">File content</label>
+        <label class="form-label mb-1" for="editorFallback">File content</label>
         <div id="codeMirrorHost" class="knx-codemirror-host d-none"></div>
         <textarea id="editorFallback" class="form-control d-none" spellcheck="false" disabled></textarea>
+
+        <div class="d-flex flex-wrap justify-content-between gap-2 mt-3 mb-3">
+          <div class="knx-editor-toolbar">
+            <button id="reloadButton" type="button" class="btn btn-secondary">RELOAD</button>
+            <button id="formatJsonButton" type="button" class="btn btn-outline-secondary d-none" disabled>FORMAT JSON</button>
+            <button id="validateButton" type="button" class="btn btn-primary" disabled>VALIDATE</button>
+          </div>
+          <button id="saveButton" type="button" class="btn btn-success" disabled>SAVE</button>
+        </div>
+
+        <div id="status" class="alert alert-secondary mb-0" role="alert">Open this tab to load the KNX configuration.</div>
       </div>
     </div>
   </section>
@@ -320,7 +354,7 @@
 
     function editorModeForExtension(extension) {
       if (extension === '.json') {
-        return 'application/json';
+        return { name: "javascript", json: true };
       }
 
       if (extension === '.yaml' || extension === '.yml') {
@@ -419,8 +453,8 @@
       if (cmEditor) {
         const wrapper = cmEditor.getWrapperElement();
         if (wrapper) {
-          wrapper.style.height = '520px';
-          wrapper.style.minHeight = '520px';
+          wrapper.style.height = 'calc(100vh - 300px)';
+          wrapper.style.minHeight = '650px';
           wrapper.style.display = 'block';
         }
         requestAnimationFrame(() => cmEditor.refresh());
