@@ -1,41 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 160" role="img" aria-labelledby="title desc">
-  <title id="title">Custom KNX wordmark for homebridge-knx</title>
-  <desc id="desc">A bespoke green KNX wordmark with angular connection lines and nodes, not the official KNX Association logo.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 112" role="img" aria-labelledby="title desc">
+  <title id="title">KNX wordmark</title>
+  <desc id="desc">A compact green KNX wordmark for the homebridge-knx plugin UI.</desc>
   <defs>
     <linearGradient id="knxGreen" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#7cff9b"/>
-      <stop offset="0.48" stop-color="#23d45d"/>
-      <stop offset="1" stop-color="#0a8f39"/>
+      <stop offset="0" stop-color="#72ff93"/>
+      <stop offset="0.5" stop-color="#21d85b"/>
+      <stop offset="1" stop-color="#0d8f3d"/>
     </linearGradient>
-    <linearGradient id="knxDark" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#203428"/>
-      <stop offset="1" stop-color="#0d2015"/>
-    </linearGradient>
-    <filter id="softGlow" x="-20%" y="-30%" width="140%" height="160%">
-      <feGaussianBlur stdDeviation="4" result="blur"/>
-      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.12 0 0 0 0 0.95 0 0 0 0 0.36 0 0 0 .55 0" result="glow"/>
-      <feMerge>
-        <feMergeNode in="glow"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
   </defs>
-
-  <rect x="6" y="10" width="408" height="140" rx="30" fill="url(#knxDark)" opacity="0.7"/>
-  <path d="M29 121 78 39h71l-49 82H29Z" fill="#102419" stroke="#ffffff" stroke-opacity="0.16" stroke-width="3"/>
-  <path d="M70 110V50" stroke="url(#knxGreen)" stroke-width="11" stroke-linecap="round"/>
-  <path d="M72 80 117 50" stroke="url(#knxGreen)" stroke-width="11" stroke-linecap="round"/>
-  <path d="M72 80 121 111" stroke="url(#knxGreen)" stroke-width="11" stroke-linecap="round"/>
-  <circle cx="70" cy="50" r="9" fill="#d9ffe3" stroke="#21c95a" stroke-width="5"/>
-  <circle cx="117" cy="50" r="9" fill="#d9ffe3" stroke="#21c95a" stroke-width="5"/>
-  <circle cx="121" cy="111" r="9" fill="#d9ffe3" stroke="#21c95a" stroke-width="5"/>
-
-  <g filter="url(#softGlow)" fill="url(#knxGreen)">
-    <path d="M163 42h24v33l33-33h30l-39 38 42 38h-31l-35-32v32h-24V42Z"/>
-    <path d="M257 42h23l42 42V42h24v76h-21l-44-44v44h-24V42Z"/>
-    <path d="M354 42h29l17 22 17-22h29l-31 37 33 39h-30l-19-24-19 24h-29l33-39-30-37Z" transform="translate(-34 0)"/>
+  <g fill="url(#knxGreen)">
+    <path d="M10 20h29v29l31-29h37L63 61l47 31H70L39 69v23H10V20Z"/>
+    <path d="M113 20h27l55 48V20h29v72h-25l-57-50v50h-29V20Z"/>
+    <path d="M221 20h34l22 24 22-24h35l-39 36 41 36h-36l-24-24-24 24h-35l41-36-37-36Z" transform="translate(-80 0)"/>
   </g>
-
-  <path d="M162 128h178" stroke="#f58220" stroke-width="5" stroke-linecap="round" opacity="0.95"/>
-  <path d="M350 128h28" stroke="#23d45d" stroke-width="5" stroke-linecap="round" opacity="0.95"/>
 </svg>
