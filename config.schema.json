@@ -66,5 +66,7 @@
         }
     },
     "form": null,
-    "display": null
+    "display": null,
+    "customUi": true,
+    "customUiPath": "./ui"
 }

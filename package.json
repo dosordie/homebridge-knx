@@ -26,10 +26,11 @@
         "Siri"
     ],
     "dependencies": {
+        "@homebridge/plugin-ui-utils": "^2.2.4",
         "debug": "^4.3.4",
         "eibd": "^0.5.1",
-        "knx": "github:dosordie/knx#master",
-        "js-yaml": "^4.1.0"
+        "js-yaml": "^4.1.0",
+        "knx": "github:dosordie/knx#master"
     },
     "author": {
         "name": "Raoul",
