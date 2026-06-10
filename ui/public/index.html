@@ -354,6 +354,25 @@
       ]);
     }
 
+    function isRequestTimeout(error) {
+      return error && String(error.message || error).includes('Request timeout');
+    }
+
+    function reloadIframeOnce(reason) {
+      const key = 'homebridge-knx-ui-reload-once';
+      const last = Number(sessionStorage.getItem(key) || 0);
+      const now = Date.now();
+
+      if (now - last < 10000) {
+        console.warn('[homebridge-knx] reload suppressed', reason);
+        return;
+      }
+
+      sessionStorage.setItem(key, String(now));
+      console.warn('[homebridge-knx] reloading iframe because:', reason);
+      window.location.reload();
+    }
+
     function setPlatformStatus(message, type = 'secondary') {
       platformStatus.className = `alert alert-${type}`;
       platformStatus.textContent = message;
@@ -685,8 +704,16 @@
         platformKnxdIp.value = config.knxd_ip || '';
         platformKnxdPort.value = config.knxd_port || 6720;
         platformKnxPhyAddr.value = config.knx_phy_addr || '';
+        sessionStorage.removeItem('homebridge-knx-ui-reload-once');
         setPlatformStatus('Plugin settings loaded.', 'success');
       } catch (error) {
+        if (isRequestTimeout(error)) {
+          setPlatformStatus('Plugin UI reload required. Reloading...', 'warning');
+          setPlatformBusy(false);
+          reloadIframeOnce('/platform-config/load timeout');
+          return;
+        }
+
         showPlatformError(error);
       } finally {
         platformConfigLoading = false;
@@ -922,15 +949,6 @@
     validateButton.addEventListener('click', validateFile);
     saveButton.addEventListener('click', saveFile);
     window.addEventListener('resize', layoutEditor);
-    window.addEventListener('pageshow', () => safeInitialise('pageshow'));
-
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) safeInitialise('visible');
-    });
-
-    window.addEventListener('focus', () => {
-      safeInitialise('focus');
-    });
 
     if (window.homebridge && typeof homebridge.addEventListener === 'function') {
       homebridge.addEventListener('ready', () => safeInitialise('ready'));
