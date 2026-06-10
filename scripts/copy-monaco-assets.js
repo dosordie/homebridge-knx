@@ -37,6 +37,12 @@ function copyDirectory(sourceDirectory, destinationDirectory) {
 
 function copyMonacoAssets() {
     if (!fs.existsSync(source)) {
+        const loaderPath = path.join(destination, 'loader.js');
+        if (fs.existsSync(loaderPath)) {
+            console.warn(`[homebridge-knx] Monaco source assets were not found at ${source}; keeping existing vendored assets in ${destination}.`);
+            return;
+        }
+
         throw new Error(`Monaco assets were not found at ${source}. Run npm install so node_modules/monaco-editor/min/vs exists.`);
     }
 
