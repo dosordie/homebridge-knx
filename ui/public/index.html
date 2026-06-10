@@ -347,6 +347,13 @@
       }
     }
 
+    function requestWithTimeout(endpoint, payload, timeoutMs = 8000) {
+      return Promise.race([
+        payload === undefined ? homebridge.request(endpoint) : homebridge.request(endpoint, payload),
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`Request timeout: ${endpoint}`)), timeoutMs)),
+      ]);
+    }
+
     function setPlatformStatus(message, type = 'secondary') {
       platformStatus.className = `alert alert-${type}`;
       platformStatus.textContent = message;
@@ -603,12 +610,12 @@
       }
 
       if (panelId === 'plugin-settings-panel') {
-        await loadPlatformConfig();
+        await loadPlatformConfig({ force: true });
       }
 
       if (panelId === 'knx-editor-panel') {
         editorLoaded = false;
-        await loadConfigMetadata();
+        await loadConfigMetadata({ force: true });
         editorLoaded = true;
       }
 
@@ -617,6 +624,15 @@
     }
 
     async function safeInitialise(reason = 'initial') {
+      platformConfigLoading = false;
+      configMetadataLoading = false;
+
+      setPlatformBusy(false);
+      setBusy(false);
+
+      reloadButton.disabled = false;
+      platformReloadButton.disabled = false;
+
       if (initialiseRunning) return;
       if (!window.homebridge || typeof homebridge.request !== 'function') {
         setTimeout(() => safeInitialise(reason), 200);
@@ -630,7 +646,7 @@
         }
 
         updateKnxdVisibility();
-        await loadPlatformConfig();
+        await loadPlatformConfig({ force: true });
 
         const editorPanelActive = document
           .getElementById('knx-editor-panel')
@@ -638,7 +654,7 @@
 
         if (editorPanelActive) {
           editorLoaded = false;
-          await loadConfigMetadata();
+          await loadConfigMetadata({ force: true });
           editorLoaded = true;
         }
       } catch (error) {
@@ -650,15 +666,18 @@
       }
     }
 
-    async function loadPlatformConfig() {
-      if (platformConfigLoading) return;
+    async function loadPlatformConfig({ force = false } = {}) {
+      if (platformConfigLoading && !force) return;
+      if (force) {
+        platformConfigLoading = false;
+      }
 
       platformConfigLoading = true;
       setPlatformBusy(true);
       setPlatformStatus('Loading plugin settings...', 'secondary');
 
       try {
-        const response = await homebridge.request('/platform-config/load');
+        const response = await requestWithTimeout('/platform-config/load');
         const config = response.config || {};
         platformName.value = config.name || '';
         platformConfigPath.value = config.config_path || '';
@@ -681,7 +700,7 @@
       setPlatformStatus('Validating and saving plugin settings...', 'secondary');
 
       try {
-        const response = await homebridge.request('/platform-config/save', {
+        const response = await requestWithTimeout('/platform-config/save', {
           config: {
             name: platformName.value,
             config_path: platformConfigPath.value,
@@ -716,8 +735,11 @@
       return match ? match[1] : '';
     }
 
-    async function loadConfigMetadata() {
-      if (configMetadataLoading) return;
+    async function loadConfigMetadata({ force = false } = {}) {
+      if (configMetadataLoading && !force) return;
+      if (force) {
+        configMetadataLoading = false;
+      }
 
       configMetadataLoading = true;
       await ensureCodeEditor();
@@ -727,7 +749,7 @@
       updateCurrentFile(null);
 
       try {
-        const response = await homebridge.request('/external-config/metadata');
+        const response = await requestWithTimeout('/external-config/metadata');
         mode = response.mode;
         configPathInput.value = response.configPath || '';
 
@@ -772,6 +794,7 @@
         setBusy(false);
       } finally {
         configMetadataLoading = false;
+        setBusy(false);
         layoutEditor();
       }
     }
@@ -788,7 +811,7 @@
       setStatus('Loading file...', 'secondary');
 
       try {
-        const response = await homebridge.request('/external-config/load', currentPayload());
+        const response = await requestWithTimeout('/external-config/load', currentPayload());
         if (response.mode === 'directory') {
           setStatus(response.message || 'Select a file first.', 'warning');
           setBusy(false);
@@ -821,7 +844,7 @@
       setStatus('Validating...', 'secondary');
 
       try {
-        const response = await homebridge.request('/external-config/validate', {
+        const response = await requestWithTimeout('/external-config/validate', {
           ...currentPayload(),
           content: getEditorValue(),
         });
@@ -841,7 +864,7 @@
       setStatus('Validating and saving...', 'secondary');
 
       try {
-        const response = await homebridge.request('/external-config/save', {
+        const response = await requestWithTimeout('/external-config/save', {
           ...currentPayload(),
           content: getEditorValue(),
         });
@@ -876,7 +899,11 @@
 
     platformKnxConnection.addEventListener('change', updateKnxdVisibility);
     platformForm.addEventListener('submit', savePlatformConfig);
-    platformReloadButton.addEventListener('click', loadPlatformConfig);
+    platformReloadButton.addEventListener('click', () => {
+      platformConfigLoading = false;
+      setPlatformBusy(false);
+      loadPlatformConfig({ force: true });
+    });
 
     fileSelect.addEventListener('change', async () => {
       updateCurrentFile({
@@ -886,7 +913,11 @@
       await loadFile();
     });
 
-    reloadButton.addEventListener('click', loadConfigMetadata);
+    reloadButton.addEventListener('click', () => {
+      configMetadataLoading = false;
+      setBusy(false);
+      loadConfigMetadata({ force: true });
+    });
     formatJsonButton.addEventListener('click', formatJson);
     validateButton.addEventListener('click', validateFile);
     saveButton.addEventListener('click', saveFile);
