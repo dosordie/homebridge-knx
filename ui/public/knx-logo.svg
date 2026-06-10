@@ -1,17 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 112" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 76" role="img" aria-labelledby="title desc">
   <title id="title">KNX wordmark</title>
-  <desc id="desc">A bright green KNX wordmark with transparent background and a distinct N.</desc>
+  <desc id="desc">A wide bright green KNX wordmark with transparent background and a distinct N.</desc>
   <defs>
     <linearGradient id="knxGreen" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#7dff9b"/>
       <stop offset="0.46" stop-color="#20d65a"/>
       <stop offset="1" stop-color="#008f3a"/>
     </linearGradient>
+    <linearGradient id="knxGreenDeep" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#24e567"/>
+      <stop offset="1" stop-color="#007f34"/>
+    </linearGradient>
   </defs>
   <g fill="url(#knxGreen)">
-    <path d="M14 18h24v30l34-30h34L62 55l48 39H75L38 64v30H14V18Z"/>
-    <path d="M116 18h25l48 45V18h25v76h-23L141 47v47h-25V18Z"/>
-    <path d="M145 26h12l45 42V56l-45-42h-12v12Z" opacity="0.22"/>
-    <path d="M219 18h29l26 28 26-28h30l-41 38 43 38h-31l-28-27-28 27h-30l43-38-39-38Z" transform="translate(-72 0)"/>
+    <path d="M0 0h26v28L58 0h39L52 37l49 39H62L26 46v30H0V0Z"/>
+    <path d="M119 0h26l52 47V0h27v76h-25L146 28v48h-27V0Z"/>
+    <path d="M237 0h34l25 27 25-27h34l-43 38 45 38h-35l-27-27-28 27h-34l46-39L237 0Z" transform="translate(-17 0)"/>
   </g>
+  <path fill="url(#knxGreenDeep)" d="M149 0h16l55 50v26h-10L149 20V0Z" opacity="0.58"/>
 </svg>
