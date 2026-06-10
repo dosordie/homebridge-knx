@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.0-beta.13-dosordie.3
+- Add `NotifyOpenOnClosedContact` for `GarageDoorOpenerAdvanced` to optionally report `CurrentDoorState=OPEN` immediately when `KNXDoorClosed` changes from active to inactive.
+
 ## 0.5.0
 - **BREAKING CHANGES**
   The configuration of the KNX gateway (knxd or multicast) has been moved to homebridge's config.json again, to make it configurable using the homebridge UI
