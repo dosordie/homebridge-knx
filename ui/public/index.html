@@ -8,11 +8,25 @@
 
   #editor {
     width: 100%;
+    height: 520px;
+    min-height: 520px;
+    border: 1px solid var(--bs-border-color, #ced4da);
+    border-radius: 0.375rem;
+    overflow: hidden;
+  }
+
+  #editorFallback {
+    width: 100%;
     min-height: 520px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 0.875rem;
     line-height: 1.35;
     tab-size: 2;
+  }
+
+  #editor.d-none,
+  #editorFallback.d-none {
+    display: none !important;
   }
 
   .knx-path {
@@ -125,14 +139,16 @@
 
         <div class="knx-editor-toolbar mb-3">
           <button id="reloadButton" type="button" class="btn btn-secondary">Reload</button>
+          <button id="formatJsonButton" type="button" class="btn btn-outline-secondary d-none" disabled>Format JSON</button>
           <button id="validateButton" type="button" class="btn btn-primary" disabled>Validate</button>
           <button id="saveButton" type="button" class="btn btn-success" disabled>Save</button>
         </div>
 
         <div id="status" class="alert alert-secondary" role="alert">Open this tab to load the KNX configuration.</div>
 
-        <label class="form-label" for="editor">File content</label>
-        <textarea id="editor" class="form-control" spellcheck="false" disabled></textarea>
+        <label class="form-label" for="editorFallback">File content</label>
+        <div id="editor" aria-label="File content"></div>
+        <textarea id="editorFallback" class="form-control d-none" spellcheck="false" disabled></textarea>
       </div>
     </div>
   </section>
@@ -159,15 +175,40 @@
     const directoryPanel = document.getElementById('directoryPanel');
     const directoryMessage = document.getElementById('directoryMessage');
     const fileSelect = document.getElementById('fileSelect');
-    const editor = document.getElementById('editor');
+    const editorHost = document.getElementById('editor');
+    const editorFallback = document.getElementById('editorFallback');
     const status = document.getElementById('status');
     const reloadButton = document.getElementById('reloadButton');
+    const formatJsonButton = document.getElementById('formatJsonButton');
     const validateButton = document.getElementById('validateButton');
     const saveButton = document.getElementById('saveButton');
 
+    const EDITOR_OPTIONS = {
+      automaticLayout: true,
+      bracketPairColorization: { enabled: true },
+      folding: true,
+      glyphMargin: true,
+      insertSpaces: true,
+      lineDecorationsWidth: 12,
+      lineNumbers: 'on',
+      matchBrackets: 'always',
+      minimap: { enabled: false },
+      renderLineHighlight: 'all',
+      renderValidationDecorations: 'on',
+      roundedSelection: true,
+      scrollBeyondLastLine: false,
+      tabSize: 4,
+      wordWrap: 'off',
+    };
+
     let mode = null;
     let selectedFile = null;
+    let currentExtension = '';
     let editorLoaded = false;
+    let monacoApi = null;
+    let monacoEditor = null;
+    let monacoInitialised = false;
+    let fallbackActive = true;
 
     function fixScrollHeight() {
       if (window.homebridge && typeof homebridge.fixScrollHeight === 'function') {
@@ -198,9 +239,14 @@
 
     function setBusy(busy) {
       reloadButton.disabled = busy;
+      formatJsonButton.disabled = busy || !selectedFile || currentExtension !== '.json';
       validateButton.disabled = busy || !selectedFile;
       saveButton.disabled = busy || !selectedFile;
-      editor.disabled = busy || !selectedFile;
+      editorFallback.disabled = busy || !selectedFile;
+      if (monacoEditor) {
+        monacoEditor.updateOptions({ readOnly: busy || !selectedFile });
+      }
+      updateFormatJsonVisibility();
     }
 
     function showPlatformError(error) {
@@ -233,6 +279,144 @@
       fixScrollHeight();
     }
 
+    function detectTheme() {
+      const themeHints = [
+        document.documentElement.getAttribute('data-bs-theme'),
+        document.body.getAttribute('data-bs-theme'),
+        document.documentElement.className,
+        document.body.className,
+        window.localStorage && (localStorage.getItem('theme') || localStorage.getItem('homebridge.theme')),
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      if (themeHints.includes('dark')) {
+        return 'vs-dark';
+      }
+
+      if (themeHints.includes('light')) {
+        return 'vs-light';
+      }
+
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'vs-dark' : 'vs-light';
+    }
+
+    function applyEditorTheme() {
+      if (monacoApi) {
+        monacoApi.editor.setTheme(detectTheme());
+      }
+    }
+
+    function getParentMonaco() {
+      try {
+        return window.parent && window.parent !== window && window.parent.monaco ? window.parent.monaco : null;
+      } catch (error) {
+        console.info('[homebridge-knx] Parent Monaco is not accessible from the plugin iframe:', error.message);
+        return null;
+      }
+    }
+
+    function getExistingMonaco() {
+      if (window.monaco && window.monaco.editor) {
+        console.info('[homebridge-knx] Reusing Monaco from window.monaco.');
+        return window.monaco;
+      }
+
+      const parentMonaco = getParentMonaco();
+      if (parentMonaco && parentMonaco.editor) {
+        console.info('[homebridge-knx] Reusing Monaco from parent.monaco.');
+        return parentMonaco;
+      }
+
+      return null;
+    }
+
+    function monacoHasLanguage(languageId) {
+      return Boolean(monacoApi && monacoApi.languages && monacoApi.languages.getLanguages().some((language) => language.id === languageId));
+    }
+
+    function languageForExtension(extension) {
+      if (extension === '.json') {
+        return 'json';
+      }
+
+      if ((extension === '.yaml' || extension === '.yml') && monacoHasLanguage('yaml')) {
+        return 'yaml';
+      }
+
+      return 'plaintext';
+    }
+
+    function updateEditorLanguage() {
+      if (!monacoEditor || !monacoApi) {
+        return;
+      }
+
+      const model = monacoEditor.getModel();
+      if (model) {
+        monacoApi.editor.setModelLanguage(model, languageForExtension(currentExtension));
+      }
+    }
+
+    function updateFormatJsonVisibility() {
+      const show = currentExtension === '.json' && Boolean(selectedFile);
+      formatJsonButton.classList.toggle('d-none', !show);
+    }
+
+    async function ensureCodeEditor() {
+      if (monacoInitialised) {
+        return;
+      }
+
+      monacoInitialised = true;
+
+      try {
+        monacoApi = getExistingMonaco();
+        if (!monacoApi || !monacoApi.editor) {
+          throw new Error('No reusable Monaco API found on window.monaco or parent.monaco.');
+        }
+
+        fallbackActive = false;
+        editorFallback.classList.add('d-none');
+        editorHost.classList.remove('d-none');
+        monacoEditor = monacoApi.editor.create(editorHost, {
+          ...EDITOR_OPTIONS,
+          language: languageForExtension(currentExtension),
+          readOnly: true,
+          theme: detectTheme(),
+          value: editorFallback.value || '',
+        });
+        applyEditorTheme();
+        layoutEditor();
+      } catch (error) {
+        fallbackActive = true;
+        editorHost.classList.add('d-none');
+        editorFallback.classList.remove('d-none');
+        console.warn('[homebridge-knx] Monaco could not be loaded; using textarea fallback.', error);
+      }
+    }
+
+    function getEditorValue() {
+      return monacoEditor ? monacoEditor.getValue() : editorFallback.value;
+    }
+
+    function setEditorValue(value) {
+      const nextValue = value || '';
+      editorFallback.value = nextValue;
+      if (monacoEditor) {
+        monacoEditor.setValue(nextValue);
+      }
+    }
+
+    function layoutEditor() {
+      if (monacoEditor) {
+        window.requestAnimationFrame(() => {
+          monacoEditor.layout();
+          fixScrollHeight();
+        });
+      } else {
+        fixScrollHeight();
+      }
+    }
+
     function setActiveTab(panelId) {
       for (const button of tabButtons) {
         const active = button.dataset.knxTab === panelId;
@@ -246,9 +430,12 @@
         panel.classList.toggle('d-none', !active);
       }
 
-      if (panelId === 'knx-editor-panel' && !editorLoaded) {
-        editorLoaded = true;
-        loadConfigMetadata();
+      if (panelId === 'knx-editor-panel') {
+        ensureCodeEditor().then(layoutEditor);
+        if (!editorLoaded) {
+          editorLoaded = true;
+          loadConfigMetadata();
+        }
       }
 
       fixScrollHeight();
@@ -260,6 +447,7 @@
       }
 
       updateKnxdVisibility();
+      observeThemeChanges();
       await loadPlatformConfig();
     }
 
@@ -313,11 +501,24 @@
       }
     }
 
+    function updateCurrentFile(file) {
+      selectedFile = file ? file.relative : null;
+      currentExtension = file && file.extension ? file.extension.toLowerCase() : extensionFromName(selectedFile);
+      updateEditorLanguage();
+      updateFormatJsonVisibility();
+    }
+
+    function extensionFromName(fileName) {
+      const match = typeof fileName === 'string' ? fileName.toLowerCase().match(/(\.json|\.ya?ml)$/) : null;
+      return match ? match[1] : '';
+    }
+
     async function loadConfigMetadata() {
+      await ensureCodeEditor();
       setBusy(true);
       setStatus('Loading KNX configuration metadata...', 'secondary');
-      editor.value = '';
-      selectedFile = null;
+      setEditorValue('');
+      updateCurrentFile(null);
 
       try {
         const response = await homebridge.request('/external-config/metadata');
@@ -338,7 +539,8 @@
             setBusy(false);
             validateButton.disabled = true;
             saveButton.disabled = true;
-            editor.disabled = true;
+            editorFallback.disabled = true;
+            layoutEditor();
             return;
           }
 
@@ -346,20 +548,23 @@
             const option = document.createElement('option');
             option.textContent = file.relative;
             option.value = file.relative;
+            option.dataset.extension = file.extension || extensionFromName(file.relative);
             fileSelect.appendChild(option);
           }
 
-          selectedFile = fileSelect.value;
+          updateCurrentFile({ relative: fileSelect.value, extension: fileSelect.selectedOptions[0].dataset.extension });
           await loadFile();
           return;
         }
 
         directoryPanel.classList.add('d-none');
-        selectedFile = response.file ? response.file.relative : null;
+        updateCurrentFile(response.file);
         await loadFile();
       } catch (error) {
         showError(error);
         setBusy(false);
+      } finally {
+        layoutEditor();
       }
     }
 
@@ -367,6 +572,7 @@
       if (!selectedFile) {
         setStatus('No file selected.', 'warning');
         setBusy(false);
+        layoutEditor();
         return;
       }
 
@@ -378,15 +584,24 @@
         if (response.mode === 'directory') {
           setStatus(response.message || 'Select a file first.', 'warning');
           setBusy(false);
+          layoutEditor();
           return;
         }
 
-        editor.value = response.content || '';
-        setStatus(`Loaded ${response.file.relative}.`, 'success');
+        if (response.file) {
+          updateCurrentFile(response.file);
+        }
+        setEditorValue(response.content || '');
+        setStatus(`Loaded ${response.file.relative}.`, fallbackActive ? 'warning' : 'success');
+        if (fallbackActive) {
+          setStatus(`Loaded ${response.file.relative}. Monaco is unavailable; using textarea fallback.`, 'warning');
+        }
         setBusy(false);
       } catch (error) {
         showError(error);
         setBusy(false);
+      } finally {
+        layoutEditor();
       }
     }
 
@@ -397,7 +612,7 @@
       try {
         const response = await homebridge.request('/external-config/validate', {
           ...currentPayload(),
-          content: editor.value,
+          content: getEditorValue(),
         });
         setStatus(response.message || 'Configuration is valid.', 'success');
         if (window.homebridge && homebridge.toast && homebridge.toast.success) {
@@ -417,7 +632,7 @@
       try {
         const response = await homebridge.request('/external-config/save', {
           ...currentPayload(),
-          content: editor.value,
+          content: getEditorValue(),
         });
         const backup = response.backup ? ` Backup: ${response.backup}.` : '';
         setStatus(`${response.message || 'Configuration saved.'}${backup}`, 'success');
@@ -431,6 +646,30 @@
       }
     }
 
+    function formatJson() {
+      try {
+        const formatted = `${JSON.stringify(JSON.parse(getEditorValue()), null, 4)}\n`;
+        setEditorValue(formatted);
+        setStatus('JSON formatted.', 'success');
+        layoutEditor();
+      } catch (error) {
+        showError(new Error(`Unable to format JSON: ${error.message}`));
+      }
+    }
+
+    function observeThemeChanges() {
+      const observer = new MutationObserver(applyEditorTheme);
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-bs-theme'] });
+      observer.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-bs-theme'] });
+
+      if (window.matchMedia) {
+        const colorScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        if (typeof colorScheme.addEventListener === 'function') {
+          colorScheme.addEventListener('change', applyEditorTheme);
+        }
+      }
+    }
+
     for (const button of tabButtons) {
       button.addEventListener('click', () => setActiveTab(button.dataset.knxTab));
     }
@@ -440,13 +679,18 @@
     platformReloadButton.addEventListener('click', loadPlatformConfig);
 
     fileSelect.addEventListener('change', async () => {
-      selectedFile = fileSelect.value;
+      updateCurrentFile({
+        relative: fileSelect.value,
+        extension: fileSelect.selectedOptions[0] ? fileSelect.selectedOptions[0].dataset.extension : extensionFromName(fileSelect.value),
+      });
       await loadFile();
     });
 
     reloadButton.addEventListener('click', loadConfigMetadata);
+    formatJsonButton.addEventListener('click', formatJson);
     validateButton.addEventListener('click', validateFile);
     saveButton.addEventListener('click', saveFile);
+    window.addEventListener('resize', layoutEditor);
 
     if (window.homebridge) {
       homebridge.addEventListener('ready', initialise);
