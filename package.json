@@ -89,5 +89,5 @@
         "codemirror": "5.65.20"
     },
     "displayName": "Homebridge KNX",
-    "icon": "ui/public/knx-logo.svg"
+    "icon": "https://raw.githubusercontent.com/dosordie/homebridge-knx/master/ui/public/knx-plugin-icon.svg"
 }
