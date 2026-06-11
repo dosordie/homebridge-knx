@@ -1,8 +1,12 @@
-# homebridge-knx v0.5.1-dosordie.beta.9
+homebridge-knx v0.5.1-dosordie.beta.9
+
 
 Homebridge KNX platform plugin fork with Homebridge 2.x support, custom configuration UI, YAML/JSON config editing, child-bridge friendly setup, and knxjs fixes.
 
 This fork targets Homebridge 2.x and is not backwards compatible with older Homebridge releases. It has primarily been tested with KNX routing/knxjs; knxd support is retained for existing installations.
+Fix Für HB 2.0.0, nicht abwärtskompatibel! 
+Nur mit KNX Rounting getestet, nicht per KNXd
+Config UI Editor aktuell in Arbeit
 
 **This cannot run stand-alone in node!**
 
