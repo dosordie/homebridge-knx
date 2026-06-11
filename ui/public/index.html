@@ -70,13 +70,14 @@
 
   .knx-tabs {
     display: flex;
-    gap: 0.4rem;
-    padding: 0.35rem;
+    gap: 0;
+    padding: 0;
     margin: 0;
     border: 0;
-    border-radius: 0.9rem;
-    background: #eef1f4;
-    box-shadow: inset 0 0 0 1px var(--knx-border);
+    border-radius: 0.375rem;
+    background: transparent;
+    box-shadow: none;
+    overflow: hidden;
   }
 
   .knx-tabs .nav-item {
@@ -85,25 +86,51 @@
 
   .knx-tabs .nav-link {
     width: 100%;
-    border: 0;
-    border-radius: 0.7rem;
-    background: linear-gradient(180deg, var(--knx-orange), var(--knx-orange-dark));
+    border: 1px solid var(--bs-primary, #0d6efd);
+    border-radius: 0;
+    background: var(--bs-primary, #0d6efd);
     color: #fff;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 0.01em;
-    box-shadow: 0 6px 14px rgba(245, 130, 32, 0.24);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    box-shadow: none;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
   }
 
-  .knx-tabs .nav-link:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 9px 18px rgba(245, 130, 32, 0.28);
+  .knx-tabs .nav-item:first-child .nav-link {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+  }
+
+  .knx-tabs .nav-item:last-child .nav-link {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+  }
+
+  .knx-tabs .nav-link:hover,
+  .knx-tabs .nav-link:focus {
+    background: var(--bs-primary-hover, #0b5ed7);
+    border-color: var(--bs-primary-hover, #0a58ca);
+    color: #fff;
   }
 
   .knx-tabs .nav-link.active {
-    background: linear-gradient(180deg, var(--knx-charcoal-soft), var(--knx-charcoal));
+    background: var(--bs-primary-active, #0a58ca);
+    border-color: var(--bs-primary-active, #0a53be);
     color: #fff;
-    box-shadow: 0 8px 18px rgba(47, 52, 59, 0.28);
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  }
+
+  .knx-plugin-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .knx-plugin-heading-logo {
+    display: block;
+    width: 2.25rem;
+    height: auto;
+    flex: 0 0 auto;
   }
 
   .knx-card {
@@ -420,7 +447,7 @@
   <ul class="nav nav-tabs knx-tabs" id="knxTabs" role="tablist">
     <li class="nav-item" role="presentation">
       <button class="nav-link active" id="plugin-settings-tab" type="button" role="tab" aria-controls="plugin-settings-panel" aria-selected="true" data-knx-tab="plugin-settings-panel">
-        Plugin Einstellungen
+        Plugin-Einstellungen
       </button>
     </li>
     <li class="nav-item" role="presentation">
@@ -436,9 +463,12 @@
         <div class="card-body">
           <div class="knx-card-header">
             <div>
-              <h2 class="knx-card-title">Plugin Einstellungen</h2>
+              <div class="knx-plugin-heading">
+                <img class="knx-plugin-heading-logo" src="./knx-logo.svg" alt="KNX Logo">
+                <h2 class="knx-card-title">Plugin-Einstellungen</h2>
+              </div>
               <p class="knx-card-copy">
-                Bearbeitet den ersten Homebridge-Platform-Eintrag mit <code>platform === "KNX"</code>. Die externe KNX-Gerätekonfiguration bleibt im separaten Editor-Tab.
+                Bearbeitet den ersten Homebridge-Platform-Eintrag mit <code>platform === "KNX"</code> über den nativen Homebridge-Speichern-Button. Die externe KNX-Gerätekonfiguration bleibt im separaten Editor-Tab.
               </p>
             </div>
           </div>
@@ -456,19 +486,20 @@
                 <div class="knx-section-heading">Basis-Konfiguration</div>
                 <div class="knx-field-grid">
                   <div>
-                    <label class="form-label" for="platformName">name</label>
+                    <label class="form-label" for="platformName">Anzeigename</label>
                     <input id="platformName" class="form-control" type="text" autocomplete="off">
                   </div>
 
                   <div>
-                    <label class="form-label" for="platformKnxPhyAddr">knx_phy_addr</label>
+                    <label class="form-label" for="platformKnxPhyAddr">KNX physikalische Adresse</label>
                     <input id="platformKnxPhyAddr" class="form-control" type="text" autocomplete="off">
                   </div>
 
                   <div class="knx-span-2">
-                    <label class="form-label" for="platformConfigPath">config_path</label>
+                    <label class="form-label" for="platformConfigPath">KNX-Konfigurationspfad</label>
                     <input id="platformConfigPath" class="form-control knx-path" type="text" required autocomplete="off">
-                    <div class="form-text">Pfad zur externen JSON/YAML KNX-Gerätekonfigurationsdatei oder zu einem Verzeichnis.</div>
+                    <div class="invalid-feedback">Bitte einen KNX-Konfigurationspfad angeben.</div>
+                    <div class="form-text">Pfad zur externen JSON/YAML-KNX-Gerätekonfigurationsdatei oder zu einem Verzeichnis.</div>
                   </div>
                 </div>
               </div>
@@ -477,24 +508,26 @@
                 <div class="knx-section-heading">KNX-Verbindung</div>
                 <div class="knx-field-grid">
                   <div class="knx-span-2">
-                    <label class="form-label" for="platformKnxConnection">knxconnection</label>
+                    <label class="form-label" for="platformKnxConnection">KNX-Verbindungsart</label>
                     <select id="platformKnxConnection" class="form-select" required>
-                      <option value="">Select connection...</option>
+                      <option value="">Verbindung auswählen...</option>
                       <option value="knxd">knxd</option>
                       <option value="knxjs">knxjs</option>
                     </select>
+                    <div class="invalid-feedback">Bitte eine KNX-Verbindungsart auswählen.</div>
                   </div>
 
                   <div id="knxdFields" class="knx-span-2">
                     <div class="knx-field-grid">
                       <div>
-                        <label class="form-label" for="platformKnxdIp">knxd_ip</label>
+                        <label class="form-label" for="platformKnxdIp">KNXD Server-IP</label>
                         <input id="platformKnxdIp" class="form-control" type="text" autocomplete="off">
                       </div>
 
                       <div>
-                        <label class="form-label" for="platformKnxdPort">knxd_port</label>
+                        <label class="form-label" for="platformKnxdPort">KNXD Server-Port</label>
                         <input id="platformKnxdPort" class="form-control" type="number" min="1" max="65535" step="1">
+                        <div class="invalid-feedback">Bitte einen Port zwischen 1 und 65535 angeben.</div>
                       </div>
                     </div>
                   </div>
@@ -504,10 +537,9 @@
               <div class="knx-form-section">
                 <div class="knx-section-heading">Aktionen</div>
                 <div class="knx-editor-toolbar mb-3">
-                  <button id="platformReloadButton" type="button" class="btn btn-secondary">Reload</button>
-                  <button id="platformSaveButton" type="submit" class="btn btn-success">Save Plugin Einstellungen</button>
+                  <button id="platformReloadButton" type="button" class="btn btn-secondary">Neu laden</button>
                 </div>
-                <div id="platformStatus" class="alert alert-secondary mb-0" role="alert">Loading plugin settings...</div>
+                <div id="platformStatus" class="alert alert-secondary mb-0" role="alert">Plugin-Einstellungen werden geladen...</div>
               </div>
             </form>
           </div>
@@ -581,7 +613,6 @@
     const platformKnxPhyAddr = document.getElementById('platformKnxPhyAddr');
     const platformStatus = document.getElementById('platformStatus');
     const platformReloadButton = document.getElementById('platformReloadButton');
-    const platformSaveButton = document.getElementById('platformSaveButton');
 
     const configPathInput = document.getElementById('configPath');
     const directoryPanel = document.getElementById('directoryPanel');
@@ -691,7 +722,6 @@
 
     function setPlatformBusy(busy) {
       platformReloadButton.disabled = busy;
-      platformSaveButton.disabled = busy;
       for (const input of platformForm.querySelectorAll('input, select')) {
         input.disabled = busy;
       }
@@ -724,7 +754,7 @@
       const message = error && error.message ? error.message : String(error);
       setPlatformStatus(message, 'danger');
       if (window.homebridge && homebridge.toast && homebridge.toast.error) {
-        homebridge.toast.error(message, 'Plugin Einstellungen');
+        homebridge.toast.error(message, 'Plugin-Einstellungen');
       }
     }
 
@@ -790,8 +820,8 @@
     function updateKnxdVisibility() {
       const usesKnxd = platformKnxConnection.value === 'knxd';
       knxdFields.classList.toggle('d-none', !usesKnxd);
-      platformKnxdIp.disabled = !usesKnxd || platformSaveButton.disabled;
-      platformKnxdPort.disabled = !usesKnxd || platformSaveButton.disabled;
+      platformKnxdIp.disabled = !usesKnxd || platformConfigLoading;
+      platformKnxdPort.disabled = !usesKnxd || platformConfigLoading;
       fixScrollHeight();
     }
 
@@ -1134,14 +1164,22 @@
       }
 
       platformConfigLoading = true;
-      setLoadingOverlay(true, 'Loading plugin settings...');
+      setLoadingOverlay(true, 'Plugin-Einstellungen werden geladen...');
       setPlatformBusy(true);
-      setPlatformStatus('Loading plugin settings...', 'secondary');
+      setPlatformStatus('Plugin-Einstellungen werden geladen...', 'secondary');
 
       try {
-        const response = await requestWithTimeout('/platform-config/load');
-        applyPlatformConfig(response.config || {});
-        setPlatformStatus('Plugin settings loaded.', 'success');
+        assertNativeConfigSaveApiAvailable();
+        const pluginConfig = await homebridge.getPluginConfig();
+        const platformIndex = findKnxPlatformConfigIndex(pluginConfig);
+
+        if (platformIndex === -1) {
+          throw new Error('Keine KNX-Plattform-Konfiguration in der Homebridge-Plugin-Konfiguration gefunden.');
+        }
+
+        applyPlatformConfig(pluginConfig[platformIndex] || {});
+        validatePlatformForm();
+        setPlatformStatus('Plugin-Einstellungen geladen. Änderungen werden über den nativen Speichern-Button gesichert.', 'success');
       } catch (error) {
         showPlatformError(error);
       } finally {
@@ -1151,37 +1189,115 @@
       }
     }
 
-    async function savePlatformConfig(event) {
-      event.preventDefault();
+    function setFieldValidity(field, message = '') {
+      field.classList.toggle('is-invalid', Boolean(message));
+      field.setCustomValidity(message);
+    }
 
-      setLoadingOverlay(true, 'Saving plugin settings...');
-      setPlatformBusy(true);
-      setPlatformStatus('Validating and saving plugin settings...', 'secondary');
+    function validatePlatformForm() {
+      const configPath = platformConfigPath.value.trim();
+      const connection = platformKnxConnection.value;
+      const portValue = platformKnxdPort.value === '' ? '' : Number(platformKnxdPort.value);
+      const errors = [];
 
-      try {
-        const response = await requestWithTimeout('/platform-config/save', {
-          config: {
-            name: platformName.value,
-            config_path: platformConfigPath.value,
-            knxconnection: platformKnxConnection.value,
-            knxd_ip: platformKnxdIp.value,
-            knxd_port: platformKnxdPort.value,
-            knx_phy_addr: platformKnxPhyAddr.value,
-          },
-        });
+      setFieldValidity(platformConfigPath);
+      setFieldValidity(platformKnxConnection);
+      setFieldValidity(platformKnxdPort);
 
-        const backup = response.backup ? ` Backup: ${response.backup}.` : '';
-        setPlatformStatus(`${response.message || 'Homebridge restart required.'}${backup}`, 'success');
-        editorLoaded = false;
-        if (window.homebridge && homebridge.toast && homebridge.toast.success) {
-          homebridge.toast.success('Homebridge restart required.', 'Plugin Einstellungen');
-        }
-      } catch (error) {
-        showPlatformError(error);
-      } finally {
-        setPlatformBusy(false);
-        setLoadingOverlay(false);
+      if (!configPath) {
+        const message = 'Bitte einen KNX-Konfigurationspfad angeben.';
+        setFieldValidity(platformConfigPath, message);
+        errors.push(message);
       }
+
+      if (connection !== 'knxd' && connection !== 'knxjs') {
+        const message = 'Bitte eine KNX-Verbindungsart auswählen.';
+        setFieldValidity(platformKnxConnection, message);
+        errors.push(message);
+      }
+
+      if (connection === 'knxd' && (!Number.isInteger(portValue) || portValue < 1 || portValue > 65535)) {
+        const message = 'Der KNXD Server-Port muss zwischen 1 und 65535 liegen.';
+        setFieldValidity(platformKnxdPort, message);
+        errors.push(message);
+      }
+
+      return errors;
+    }
+
+    function platformFormPayload() {
+      return {
+        name: platformName.value.trim(),
+        config_path: platformConfigPath.value.trim(),
+        knxconnection: platformKnxConnection.value,
+        knxd_ip: platformKnxdIp.value.trim(),
+        knxd_port: platformKnxdPort.value === '' ? '' : Number(platformKnxdPort.value),
+        knx_phy_addr: platformKnxPhyAddr.value.trim(),
+      };
+    }
+
+    async function updateNativePlatformConfig() {
+      assertNativeConfigSaveApiAvailable();
+
+      const pluginConfig = await homebridge.getPluginConfig();
+      const platformIndex = findKnxPlatformConfigIndex(pluginConfig);
+
+      if (platformIndex === -1) {
+        throw new Error('Keine KNX-Plattform-Konfiguration in der Homebridge-Plugin-Konfiguration gefunden.');
+      }
+
+      const payload = platformFormPayload();
+      const updatedConfig = pluginConfig.map((entry, index) => {
+        if (index !== platformIndex) {
+          return entry;
+        }
+
+        return {
+          ...entry,
+          ...payload,
+          platform: KNX_PLATFORM_ALIAS,
+        };
+      });
+
+      await homebridge.updatePluginConfig(updatedConfig);
+      homebridge.enableSaveButton();
+    }
+
+    let platformNativeSaveTimer = null;
+
+    function scheduleNativePlatformConfigUpdate() {
+      if (platformConfigLoading) {
+        return;
+      }
+
+      if (platformNativeSaveTimer) {
+        clearTimeout(platformNativeSaveTimer);
+      }
+
+      const errors = validatePlatformForm();
+      if (errors.length) {
+        if (typeof homebridge.disableSaveButton === 'function') {
+          homebridge.disableSaveButton();
+        }
+        setPlatformStatus(errors[0], 'danger');
+        return;
+      }
+
+      setPlatformStatus('Änderungen erkannt. Der native Speichern-Button wird vorbereitet...', 'secondary');
+      platformNativeSaveTimer = setTimeout(async () => {
+        platformNativeSaveTimer = null;
+        try {
+          await updateNativePlatformConfig();
+          setPlatformStatus('Plugin-Einstellungen sind gültig. Bitte unten rechts den nativen Speichern-Button klicken.', 'success');
+        } catch (error) {
+          showPlatformError(error);
+        }
+      }, 250);
+    }
+
+    function savePlatformConfig(event) {
+      event.preventDefault();
+      scheduleNativePlatformConfigUpdate();
     }
 
     function updateCurrentFile(file) {
@@ -1372,7 +1488,14 @@
       });
     }
 
-    platformKnxConnection.addEventListener('change', updateKnxdVisibility);
+    platformKnxConnection.addEventListener('change', () => {
+      updateKnxdVisibility();
+      scheduleNativePlatformConfigUpdate();
+    });
+    for (const input of [platformName, platformConfigPath, platformKnxdIp, platformKnxdPort, platformKnxPhyAddr]) {
+      input.addEventListener('input', scheduleNativePlatformConfigUpdate);
+      input.addEventListener('change', scheduleNativePlatformConfigUpdate);
+    }
     platformForm.addEventListener('submit', savePlatformConfig);
     platformReloadButton.addEventListener('click', () => {
       platformConfigLoading = false;
