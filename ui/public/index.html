@@ -574,6 +574,7 @@
                 <span class="form-check-label">Einrückung anzeigen</span>
               </label>
               <button id="reloadButton" type="button" class="btn btn-secondary">NEU LADEN</button>
+              <button id="searchButton" type="button" class="btn btn-outline-secondary" disabled>Suchen</button>
               <button id="formatJsonButton" type="button" class="btn btn-outline-secondary d-none" disabled>FORMAT JSON</button>
               <button id="validateButton" type="button" class="btn btn-primary" disabled>VALIDIEREN</button>
             </div>
@@ -620,6 +621,7 @@
     const editorFallback = document.getElementById('editorFallback');
     const status = document.getElementById('status');
     const reloadButton = document.getElementById('reloadButton');
+    const searchButton = document.getElementById('searchButton');
     const formatJsonButton = document.getElementById('formatJsonButton');
     const showIndentationToggle = document.getElementById('showIndentationToggle');
     const validateButton = document.getElementById('validateButton');
@@ -634,9 +636,13 @@
 
     const CODEMIRROR_ASSETS = [
       { type: 'style', url: `${CODEMIRROR_BASE_PATH}/lib/codemirror.css` },
+      { type: 'style', url: `${CODEMIRROR_BASE_PATH}/addon/dialog/dialog.css` },
       { type: 'script', url: `${CODEMIRROR_BASE_PATH}/lib/codemirror.js` },
       { type: 'script', url: `${CODEMIRROR_BASE_PATH}/mode/javascript/javascript.js` },
       { type: 'script', url: `${CODEMIRROR_BASE_PATH}/mode/yaml/yaml.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/addon/dialog/dialog.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/addon/search/searchcursor.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/addon/search/search.js` },
       { type: 'script', url: `${CODEMIRROR_BASE_PATH}/addon/edit/matchbrackets.js` },
       { type: 'script', url: `${CODEMIRROR_BASE_PATH}/addon/display/placeholder.js` },
     ];
@@ -737,6 +743,7 @@
 
     function setBusy(busy) {
       reloadButton.disabled = busy;
+      searchButton.disabled = busy || !selectedFile || !codeMirrorAvailable;
       formatJsonButton.disabled = busy || !selectedFile || currentExtension !== '.json';
       validateButton.disabled = busy || !selectedFile;
       saveButton.disabled = busy || !selectedFile;
@@ -1013,6 +1020,14 @@
           indentWithTabs: false,
           lineWrapping: false,
           readOnly: true,
+          extraKeys: {
+            'Ctrl-F': openEditorSearch,
+            'Cmd-F': openEditorSearch,
+            'Ctrl-G': findNextEditorSearchResult,
+            'Cmd-G': findNextEditorSearchResult,
+            'Shift-Ctrl-G': findPreviousEditorSearchResult,
+            'Shift-Cmd-G': findPreviousEditorSearchResult,
+          },
         });
         cmEditor.on('changes', scheduleIndentationMarkers);
         updateIndentationToggle();
@@ -1468,6 +1483,65 @@
       }
     }
 
+    function isKnxEditorPanelActive() {
+      return document.getElementById('knx-editor-panel')?.classList.contains('active');
+    }
+
+    function codeMirrorCommands() {
+      return window.CodeMirror && window.CodeMirror.commands ? window.CodeMirror.commands : {};
+    }
+
+    function executeEditorCommand(command) {
+      if (!cmEditor || !codeMirrorAvailable || typeof cmEditor.execCommand !== 'function') {
+        return;
+      }
+
+      if (!codeMirrorCommands()[command]) {
+        return;
+      }
+
+      cmEditor.focus();
+      cmEditor.execCommand(command);
+    }
+
+    function openEditorSearch() {
+      if (!cmEditor || !codeMirrorAvailable) {
+        return;
+      }
+
+      executeEditorCommand(codeMirrorCommands().findPersistent ? 'findPersistent' : 'find');
+    }
+
+    function findNextEditorSearchResult() {
+      executeEditorCommand('findNext');
+    }
+
+    function findPreviousEditorSearchResult() {
+      executeEditorCommand('findPrev');
+    }
+
+    function handleEditorSearchShortcut(event) {
+      if (!isKnxEditorPanelActive() || !(event.ctrlKey || event.metaKey) || event.altKey) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+      if (key === 'f') {
+        event.preventDefault();
+        openEditorSearch();
+        return;
+      }
+
+      if (key === 'g') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          findPreviousEditorSearchResult();
+        } else {
+          findNextEditorSearchResult();
+        }
+      }
+    }
+
     function formatJson() {
       try {
         const formatted = `${JSON.stringify(JSON.parse(getEditorValue()), null, 4)}\n`;
@@ -1508,12 +1582,14 @@
       setBusy(false);
       loadConfigMetadata({ force: true });
     });
+    searchButton.addEventListener('click', openEditorSearch);
     formatJsonButton.addEventListener('click', formatJson);
     showIndentationToggle.addEventListener('change', toggleIndentationMarkers);
     updateIndentationToggle();
     validateButton.addEventListener('click', validateFile);
     saveButton.addEventListener('click', saveFile);
     window.addEventListener('resize', layoutEditor);
+    document.addEventListener('keydown', handleEditorSearchShortcut);
     if (window.homebridge && typeof homebridge.addEventListener === 'function') {
       homebridge.addEventListener('ready', () => safeInitialise('ready'));
     }
