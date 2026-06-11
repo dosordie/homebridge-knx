@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Homebridge KNX plugin icon</title>
+  <desc id="desc">A square KNX plugin icon with green KNX letters on a white card.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f3fff6"/>
+    </linearGradient>
+    <linearGradient id="knxGreen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7dff9b"/>
+      <stop offset="0.46" stop-color="#20d65a"/>
+      <stop offset="1" stop-color="#008f3a"/>
+    </linearGradient>
+    <linearGradient id="knxGreenDeep" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#24e567"/>
+      <stop offset="1" stop-color="#007f34"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#003b18" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#background)"/>
+  <rect x="34" y="34" width="444" height="444" rx="72" fill="none" stroke="#d9eadf" stroke-width="10"/>
+  <g filter="url(#shadow)">
+    <g transform="translate(70 192) scale(1.14)" fill="url(#knxGreen)">
+      <path d="M0 0h26v28L58 0h39L52 37l49 39H62L26 46v30H0V0Z"/>
+      <path d="M119 0h26l52 47V0h27v76h-25L146 28v48h-27V0Z"/>
+      <path d="M237 0h34l25 27 25-27h34l-43 38 45 38h-35l-27-27-28 27h-34l46-39L237 0Z" transform="translate(-17 0)"/>
+    </g>
+    <path fill="url(#knxGreenDeep)" d="M240 192h18.2l62.7 57v29.6h-11.4L240 214.8V192Z" opacity="0.58"/>
+  </g>
+</svg>
