@@ -598,6 +598,10 @@
 
     const CODEMIRROR_BASE_PATH = './vendor/codemirror';
     const SHOW_INDENTATION_STORAGE_KEY = 'homebridge-knx.showIndentation';
+    const KNX_PLATFORM_ALIAS = 'KNX';
+    // Internal marker only used to make Homebridge Config UI's native save flow detect
+    // that an externally saved KNX config file needs the standard restart dialog.
+    const EXTERNAL_CONFIG_SAVED_MARKER_FIELD = '_knx_ui_external_config_saved_at';
 
     const CODEMIRROR_ASSETS = [
       { type: 'style', url: `${CODEMIRROR_BASE_PATH}/lib/codemirror.css` },
@@ -736,6 +740,51 @@
       return {
         file: mode === 'directory' ? selectedFile : undefined,
       };
+    }
+
+    function assertNativeConfigSaveApiAvailable() {
+      if (!window.homebridge) {
+        throw new Error('Homebridge Config UI API is not available.');
+      }
+
+      for (const method of ['getPluginConfig', 'updatePluginConfig', 'enableSaveButton']) {
+        if (typeof homebridge[method] !== 'function') {
+          throw new Error(`Homebridge Config UI API method ${method}() is not available.`);
+        }
+      }
+    }
+
+    function findKnxPlatformConfigIndex(pluginConfig) {
+      if (!Array.isArray(pluginConfig)) {
+        return -1;
+      }
+
+      return pluginConfig.findIndex((entry) => entry && entry.platform === KNX_PLATFORM_ALIAS);
+    }
+
+    async function markExternalConfigSavedForNativeSave() {
+      assertNativeConfigSaveApiAvailable();
+
+      const pluginConfig = await homebridge.getPluginConfig();
+      const platformIndex = findKnxPlatformConfigIndex(pluginConfig);
+
+      if (platformIndex === -1) {
+        throw new Error('No KNX platform config found in Homebridge plugin configuration.');
+      }
+
+      const updatedConfig = pluginConfig.map((entry, index) => {
+        if (index !== platformIndex) {
+          return entry;
+        }
+
+        return {
+          ...entry,
+          [EXTERNAL_CONFIG_SAVED_MARKER_FIELD]: new Date().toISOString(),
+        };
+      });
+
+      await homebridge.updatePluginConfig(updatedConfig);
+      homebridge.enableSaveButton();
     }
 
     function updateKnxdVisibility() {
@@ -1291,10 +1340,12 @@
           content: getEditorValue(),
         });
 
+        await markExternalConfigSavedForNativeSave();
+
         const backup = response.backup ? ` Backup: ${response.backup}.` : '';
-        setStatus(`${response.message || 'Configuration saved.'}${backup}`, 'success');
+        setStatus(`Datei gespeichert.${backup} Bitte unten rechts Speichern klicken, um den Homebridge-Neustartdialog zu öffnen.`, 'success');
         if (window.homebridge && homebridge.toast && homebridge.toast.success) {
-          homebridge.toast.success('Configuration saved. Restart Homebridge after changes.', 'KNX Config Editor');
+          homebridge.toast.success('Datei gespeichert. Bitte unten rechts Speichern klicken, um den Homebridge-Neustartdialog zu öffnen.', 'KNX Config Editor');
         }
       } catch (error) {
         showError(error);
