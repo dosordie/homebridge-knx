@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1-dosordie.beta.9
+- Switch package versioning to the `dosordie.beta` prerelease format for the next main merge.
+- Point Homebridge metadata at the text-based SVG icon on the `main` branch so the plugin list no longer falls back to the default Homebridge logo.
+- Document the plugin-list icon cache behavior for Homebridge UI updates.
+
 ## 0.5.0-beta.13-dosordie.8
 - Bump package metadata and README version for the main-merge preparation.
 - Expand the plugin description to cover Homebridge 2.x support, the custom configuration UI, YAML/JSON config editing, child-bridge usage, and knxjs fixes.
