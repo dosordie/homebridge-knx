@@ -87,5 +87,7 @@
     "homepage": "https://github.com/dosordie/homebridge-knx",
     "devDependencies": {
         "codemirror": "5.65.20"
-    }
+    },
+    "displayName": "Homebridge KNX",
+    "icon": "ui/public/knx-logo.svg"
 }

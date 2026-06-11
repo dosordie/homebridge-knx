@@ -11,6 +11,9 @@
     --knx-border: rgba(33, 37, 41, 0.12);
     --knx-shadow: 0 14px 34px rgba(20, 24, 31, 0.12);
     --knx-soft-shadow: 0 8px 22px rgba(20, 24, 31, 0.08);
+    --knx-ui-primary: var(--primary-color, var(--mdc-theme-primary, var(--knx-orange)));
+    --knx-ui-primary-hover: var(--primary-color-hover, var(--knx-orange-dark));
+    --knx-ui-primary-active: var(--primary-color-active, var(--knx-orange-dark));
   }
 
   .knx-ui-shell {
@@ -86,9 +89,9 @@
 
   .knx-tabs .nav-link {
     width: 100%;
-    border: 1px solid var(--bs-primary, #0d6efd);
+    border: 1px solid var(--knx-ui-primary);
     border-radius: 0;
-    background: var(--bs-primary, #0d6efd);
+    background: var(--knx-ui-primary);
     color: #fff;
     font-weight: 700;
     letter-spacing: 0.01em;
@@ -108,14 +111,14 @@
 
   .knx-tabs .nav-link:hover,
   .knx-tabs .nav-link:focus {
-    background: var(--bs-primary-hover, #0b5ed7);
-    border-color: var(--bs-primary-hover, #0a58ca);
+    background: var(--knx-ui-primary-hover);
+    border-color: var(--knx-ui-primary-hover);
     color: #fff;
   }
 
   .knx-tabs .nav-link.active {
-    background: var(--bs-primary-active, #0a58ca);
-    border-color: var(--bs-primary-active, #0a53be);
+    background: var(--knx-ui-primary-active);
+    border-color: var(--knx-ui-primary-active);
     color: #fff;
     box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
   }
@@ -499,7 +502,7 @@
                     <label class="form-label" for="platformConfigPath">KNX-Konfigurationspfad</label>
                     <input id="platformConfigPath" class="form-control knx-path" type="text" required autocomplete="off">
                     <div class="invalid-feedback">Bitte einen KNX-Konfigurationspfad angeben.</div>
-                    <div class="form-text">Pfad zur externen JSON/YAML-KNX-Gerätekonfigurationsdatei oder zu einem Verzeichnis.</div>
+                    <div class="form-text">Pfad zur externen JSON/YAML-KNX-Gerätekonfigurationsdatei oder zu einem Verzeichnis. Ein Verzeichnis kann mehrere Konfigurationsdateien enthalten; alle Dateien mit <code>.json</code>, <code>.yaml</code> oder <code>.yml</code>-Endung werden geladen.</div>
                   </div>
                 </div>
               </div>
@@ -534,13 +537,7 @@
                 </div>
               </div>
 
-              <div class="knx-form-section">
-                <div class="knx-section-heading">Aktionen</div>
-                <div class="knx-editor-toolbar mb-3">
-                  <button id="platformReloadButton" type="button" class="btn btn-secondary">Neu laden</button>
-                </div>
-                <div id="platformStatus" class="alert alert-secondary mb-0" role="alert">Plugin-Einstellungen werden geladen...</div>
-              </div>
+              <div id="platformStatus" class="alert alert-secondary mt-3 mb-0" role="alert">Plugin-Einstellungen werden geladen...</div>
             </form>
           </div>
         </div>
@@ -612,7 +609,6 @@
     const platformKnxdPort = document.getElementById('platformKnxdPort');
     const platformKnxPhyAddr = document.getElementById('platformKnxPhyAddr');
     const platformStatus = document.getElementById('platformStatus');
-    const platformReloadButton = document.getElementById('platformReloadButton');
 
     const configPathInput = document.getElementById('configPath');
     const directoryPanel = document.getElementById('directoryPanel');
@@ -721,7 +717,6 @@
     }
 
     function setPlatformBusy(busy) {
-      platformReloadButton.disabled = busy;
       for (const input of platformForm.querySelectorAll('input, select')) {
         input.disabled = busy;
       }
@@ -1497,11 +1492,6 @@
       input.addEventListener('change', scheduleNativePlatformConfigUpdate);
     }
     platformForm.addEventListener('submit', savePlatformConfig);
-    platformReloadButton.addEventListener('click', () => {
-      platformConfigLoading = false;
-      setPlatformBusy(false);
-      loadPlatformConfig({ force: true });
-    });
 
     fileSelect.addEventListener('change', async () => {
       updateCurrentFile({
