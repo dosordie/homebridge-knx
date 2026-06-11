@@ -1,43 +1,139 @@
-homebridge-knx v0.5.1-dosordie.beta.9
+# homebridge-knx v0.5.1-dosordie.beta.9
 
+> Homebridge-KNX-Fork für Homebridge 2.x mit KNX/IP-Routing über `knxjs`, optionalem `knxd`-Betrieb und eigener Homebridge-Config-UI.
 
-Homebridge KNX platform plugin fork with Homebridge 2.x support, custom configuration UI, YAML/JSON config editing, child-bridge friendly setup, and knxjs fixes.
+Dieses Repository ist ein gepflegter Fork von `homebridge-knx` für aktuelle Homebridge-Installationen. Der Fokus liegt aktuell auf Homebridge 2.x, sauberer Konfiguration über die Homebridge UI, Child-Bridge-Setups und KNX/IP-Routing per `knxjs`.
 
-This fork targets Homebridge 2.x and is not backwards compatible with older Homebridge releases. It has primarily been tested with KNX routing/knxjs; knxd support is retained for existing installations.
-Fix Für HB 2.0.0, nicht abwärtskompatibel! 
-Nur mit KNX Rounting getestet, nicht per KNXd
-Config UI Editor aktuell in Arbeit
+**Wichtig:** Das Plugin läuft nicht eigenständig mit `node`. Es wird ausschließlich von [Homebridge](https://homebridge.io/) geladen.
 
-**This cannot run stand-alone in node!**
+## Status dieses Forks
 
-Please also visit the [Homebridge homepage](https://homebridge.io/) first.
+Dieser Fork wird zunächst direkt aus GitHub installiert:
 
-Latest homebridge-knx changes can be found in the [CHANGELOG.md](CHANGELOG.md).
+```bash
+sudo npm install -g git+https://github.com/dosordie/homebridge-knx.git
+```
 
-### This can only be used with homebridge >=2.0.0 and Node >14.0.0
+Sobald der Fork als reguläres npm-Paket veröffentlicht ist, kann die Installation entsprechend umgestellt werden. Bis dahin ist die GitHub-Installation der empfohlene Weg.
 
-### Prerequisites
-This node module requires either:
-  - a running (and properly configured) **knx daemon (knxd)**. You can find the latest version [here](https://github.com/knxd/knxd).  
-  - another KNX router which can be reached by KNX multicasts.
+## Kompatibilität
 
-I cannot support the knxd. Please address issues directly at the [knxd issue pages](https://github.com/knxd/knxd/issues). It might help to search the existing issues, as your problem might have been solved already.  
+| Komponente | Voraussetzung |
+| --- | --- |
+| Homebridge | `>= 2.0.0` |
+| Node.js | `> 14.0.0` |
+| Plugin-Typ | Homebridge Platform Plugin (`KNX`) |
+| KNX-Zugriff | `knxjs` per KNX/IP-Routing oder `knxd` |
 
-### Installation and running
-- Install homebridge first, from [https://homebridge.io/](https://homebridge.io/); 
-- Once you have your instance running (without any devices yet), go to the `Plugins` tab and type `knx` in the search box
-- The Homebridge plugin list should show the dedicated KNX icon from `ui/public/knx-plugin-icon.svg`. If Homebridge still shows the purple default icon after updating, restart Homebridge UI or clear its plugin metadata cache so the new `package.json` icon URL is fetched from the `main` branch.
-- `homebridge-knx` should be within the top five hits (yes, there are alternatives), please check the name before installing
-- Then put the configuration file *knx_config.json* into `~/.homebridge` (or another folder to your liking, but it should be **readable** and **writable** by user `homebridge` or group `homebridge` which is created by the homebridge installer), and adapt them to your needs (knxd address and some test devices in `knx_config.json`)
-- Eliminate everything (especially all group addresses) that might harm your KNX installation. Sending bus telegrams to your alarm device might wake the neighbourhood unpleasantly!
-- Use the Homebridge UI to create platform instances. Specify a name, a file or directory path for the KNX configuration, and the communication method for the KNX bus (knxd or KNX multicast).
-- You can use the UI to move the platform instances you have created into _child bridges_, which is **heavily encouraged**.
-- You can view, validate, and modify the KNX JSON/YAML configuration in the custom UI. The following sample is from my test installation:
+## Breaking Changes
+
+Bitte vor dem Update von älteren Versionen lesen:
+
+- **Nur noch Homebridge 2.x:** Dieser Fork ist nicht abwärtskompatibel zu Homebridge 1.x oder älter. Ein Update sollte erst nach der Migration auf Homebridge `>= 2.0.0` erfolgen.
+- **Bus-Anbindung wird in Homebridge `config.json` konfiguriert:** Gateway-/Bus-Parameter liegen nicht mehr ausschließlich in der externen `knx_config.json`, sondern in der Homebridge-Platform-Konfiguration.
+- **Explizite Auswahl zwischen `knxjs` und `knxd`:** Pro KNX-Platform-Instanz muss die Kommunikationsart gewählt werden:
+  - `knxjs` für KNX/IP-Routing per Multicast.
+  - `knxd` für bestehende Installationen mit laufendem knxd/eibd-Daemon.
+- **`knxjs` benötigt einen KNX/IP-Router im Netzwerk:** Für `knxjs` ist ein KNX/IP-Router mit Routing/Multicast erforderlich. Ein reines KNX/IP-Interface im Tunneling-Modus reicht dafür in der Regel nicht aus.
+- **`config_path` ist Pflicht:** Die Geräte-/GA-Konfiguration wird über einen externen JSON-/YAML-Pfad geladen. Der Pfad kann auf eine Datei oder auf ein Verzeichnis zeigen.
+- **YAML und Verzeichnis-Setups:** KNX-Konfigurationen können neben JSON auch als `.yaml`/`.yml` gepflegt werden. Zeigt `config_path` auf ein Verzeichnis, werden JSON-/YAML-Dateien daraus geladen. Pro Child Bridge sollte nur eine Datei globale Inhalte außerhalb von `Devices` enthalten.
+- **Homebridge Config UI statt alter Hilfs-Webserver:** Die frühere eingebaute Webserver-Dokumentation/Bedienung ist nicht mehr der empfohlene Weg. Konfiguration und Bearbeitung laufen über die Homebridge UI und die Custom UI dieses Plugins.
+- **Child Bridges empfohlen:** Mehrere KNX-Instanzen lassen sich über die Homebridge UI als Child Bridges betreiben. Das ist für größere KNX-Installationen ausdrücklich empfohlen.
+
+## Was ist neu in diesem Fork?
+
+- Unterstützung für **Homebridge 2.x**.
+- Eigene **Homebridge Config UI** für KNX-Platform-Instanzen.
+- Editor zum Anzeigen, Validieren und Bearbeiten externer **JSON-/YAML-KNX-Konfigurationen**.
+- Unterstützung für **Datei- oder Verzeichnis-Konfigurationen** über `config_path`.
+- Auswahl der KNX-Kommunikation direkt in der UI: **`knxjs` oder `knxd`**.
+- Verbesserungen und Fixes rund um **`knxjs`/KNX-Routing**.
+- Homebridge-Metadaten inklusive Plugin-Icon für die Plugin-Liste.
+- Child-Bridge-freundliche Struktur für getrennte KNX-Bereiche oder Etagen.
+
+Details stehen zusätzlich im [CHANGELOG.md](CHANGELOG.md).
+
+## KNX-Anbindung: `knxjs` oder `knxd`
+
+### Variante A: `knxjs` / KNX/IP-Routing
+
+Empfohlen für Installationen mit KNX/IP-Router im Netzwerk.
+
+Voraussetzungen:
+
+- KNX/IP-Router im selben Netzwerk/VLAN wie Homebridge.
+- Routing/Multicast muss im Netzwerk funktionieren.
+- Eine freie physikalische KNX-Adresse für Homebridge, z. B. `1.1.250`.
+
+Typische Platform-Konfiguration:
+
+```json
+{
+    "name": "KNX",
+    "platform": "KNX",
+    "config_path": "/home/pi/.homebridge/knx/eg.yaml",
+    "knxconnection": "knxjs",
+    "knx_phy_addr": "1.1.250"
+}
+```
+
+### Variante B: `knxd`
+
+Für bestehende Setups mit laufendem `knxd`/`eibd`-Dienst bleibt die Unterstützung erhalten.
+
+Voraussetzungen:
+
+- Installierter und erreichbarer `knxd`.
+- IP-Adresse/Hostname und Port des knxd-Dienstes.
+
+Typische Platform-Konfiguration:
+
+```json
+{
+    "name": "KNX",
+    "platform": "KNX",
+    "config_path": "/home/pi/.homebridge/knx/eg.json",
+    "knxconnection": "knxd",
+    "knxd_ip": "127.0.0.1",
+    "knxd_port": 6720
+}
+```
+
+Probleme mit `knxd` selbst bitte direkt beim [knxd-Projekt](https://github.com/knxd/knxd/issues) prüfen/melden.
+
+## Installation
+
+1. Homebridge nach offizieller Anleitung installieren: <https://homebridge.io/>.
+2. Sicherstellen, dass Homebridge mindestens Version `2.0.0` verwendet.
+3. Diesen Fork global installieren:
+
+   ```bash
+   sudo npm install -g git+https://github.com/dosordie/homebridge-knx.git
+   ```
+
+4. Homebridge neu starten.
+5. In der Homebridge UI eine neue Platform `KNX` anlegen oder eine bestehende KNX-Platform bearbeiten.
+6. `config_path`, `knxconnection` und die passenden Bus-Parameter setzen.
+7. Für größere Installationen die Instanz in eine **Child Bridge** verschieben.
+
+## Konfiguration über die Homebridge UI
+
+Die Plugin-Konfiguration besteht aus zwei Ebenen:
+
+1. **Homebridge Platform-Konfiguration**  
+   Enthält den Namen der Instanz, den `config_path` und die Bus-Anbindung (`knxjs`/`knxd`). Diese Daten stehen in der Homebridge `config.json`.
+
+2. **KNX-Gerätekonfiguration**  
+   Enthält Geräte, Services, Characteristics, Group Addresses und Handler. Diese Daten liegen extern als JSON oder YAML und werden über `config_path` referenziert.
+
+Die Custom UI kann externe KNX-Konfigurationsdateien anzeigen, validieren und speichern. Dabei werden JSON, YAML und Verzeichnisse mit mehreren Konfigurationsdateien unterstützt.
+
+## Beispiel: Child-Bridge-Setup
 
 ```json
 {
     "bridge": {
-        "name": "Homebridge 17AF",
+        "name": "Homebridge",
         "username": "0E:0B:9B:24:17:AD",
         "port": 51485,
         "pin": "880-83-869",
@@ -51,24 +147,28 @@ I cannot support the knxd. Please address issues directly at the [knxd issue pag
             "auth": "form",
             "theme": "auto",
             "tempUnits": "c",
-            "lang": "en",
+            "lang": "de",
             "platform": "config"
         },
         {
-            "name": "KNX",
+            "name": "KNX EG",
             "platform": "KNX",
-            "config_path": "/home/pi/homebridge/dg-knx_config.json",
+            "config_path": "/home/pi/.homebridge/knx/eg.yaml",
+            "knxconnection": "knxjs",
+            "knx_phy_addr": "1.1.250",
             "_bridge": {
                 "username": "1E:0B:9B:24:17:01",
                 "port": 51490
-            }            
+            }
         },
         {
-            "name": "KNX",
+            "name": "KNX OG",
             "platform": "KNX",
-            "config_path": "/home/pi/homebridge/og-knx_config.json",
+            "config_path": "/home/pi/.homebridge/knx/og.yaml",
+            "knxconnection": "knxjs",
+            "knx_phy_addr": "1.1.251",
             "_bridge": {
-                "username": "0E:0B:9B:24:17:00",
+                "username": "1E:0B:9B:24:17:02",
                 "port": 51492
             }
         }
@@ -76,27 +176,41 @@ I cannot support the knxd. Please address issues directly at the [knxd issue pag
 }
 ```
 
+## Sicherheitshinweise
 
-# Assumptions
-Without using a special handler (add-in) for the service, homebridge-knx assumes the following:
+- Vor dem ersten Start alle Beispiel-Gruppenadressen entfernen oder an die eigene Anlage anpassen.
+- Keine unbekannten Gruppenadressen schreibend testen.
+- Besonders Alarm, Tür, Tor, Heizung und Zentralfunktionen vorsichtig behandeln.
+- Vor Änderungen an produktiven KNX-Konfigurationen Backups anlegen.
 
-HomeKit type | KNX addresses DPT   
--------- | ------  
-Boolean | DPT1  
-Integer | DPT5  
-Percentage | DPT5.001  
-Float | DPT9  
+## Annahmen ohne Handler/Add-in
 
+Ohne speziellen Handler ordnet `homebridge-knx` HomeKit-Werte den folgenden KNX-DPTs zu:
 
-# knx_config.json
-See the [complete Doc!](https://github.com/snowdd1/homebridge-knx/blob/master/knx_config.json.md).
+| HomeKit-Typ | KNX-DPT |
+| --- | --- |
+| Boolean | DPT1 |
+| Integer | DPT5 |
+| Percentage | DPT5.001 |
+| Float | DPT9 |
 
+## KNX-Konfigurationsdatei
 
-# Add-ins
-Add-in (aka "handlers") can change the default behavior. [See the article](https://github.com/snowdd1/homebridge-knx/blob/master/handler-add-in.md)
+Die ausführliche Dokumentation zur KNX-Gerätekonfiguration steht in [knx_config.json.md](knx_config.json.md).
+
+## Add-ins / Handler
+
+Handler können das Standardverhalten einzelner Services oder Characteristics ändern. Details stehen in [handler-add-in.md](handler-add-in.md).
+
+## Nützliche Links
+
+- [Homebridge](https://homebridge.io/)
+- [knxd](https://github.com/knxd/knxd)
+- [Changelog](CHANGELOG.md)
+- [KNX-Konfigurationsdokumentation](knx_config.json.md)
+- [Handler/Add-ins](handler-add-in.md)
 
 Happy testing!
-
 
 [npm-url]: https://npmjs.org/package/homebridge-knx
 [downloads-image]: http://img.shields.io/npm/dm/homebridge-knx.svg
