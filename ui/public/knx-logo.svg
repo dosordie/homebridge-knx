@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 76" role="img" aria-labelledby="title desc">
+  <title id="title">KNX wordmark</title>
+  <desc id="desc">A wide bright green KNX wordmark with transparent background and a distinct N.</desc>
+  <defs>
+    <linearGradient id="knxGreen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7dff9b"/>
+      <stop offset="0.46" stop-color="#20d65a"/>
+      <stop offset="1" stop-color="#008f3a"/>
+    </linearGradient>
+    <linearGradient id="knxGreenDeep" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#24e567"/>
+      <stop offset="1" stop-color="#007f34"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#knxGreen)">
+    <path d="M0 0h26v28L58 0h39L52 37l49 39H62L26 46v30H0V0Z"/>
+    <path d="M119 0h26l52 47V0h27v76h-25L146 28v48h-27V0Z"/>
+    <path d="M237 0h34l25 27 25-27h34l-43 38 45 38h-35l-27-27-28 27h-34l46-39L237 0Z" transform="translate(-17 0)"/>
+  </g>
+  <path fill="url(#knxGreenDeep)" d="M149 0h16l55 50v26h-10L149 20V0Z" opacity="0.58"/>
+</svg>

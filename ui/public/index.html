@@ -1,0 +1,1599 @@
+<style>
+  :root {
+    --knx-orange: #f58220;
+    --knx-orange-dark: #db6f14;
+    --knx-charcoal: #2f343b;
+    --knx-charcoal-soft: #3f454d;
+    --knx-green: #1db954;
+    --knx-green-dark: #0f8f3d;
+    --knx-panel: #ffffff;
+    --knx-muted: #6c757d;
+    --knx-border: rgba(33, 37, 41, 0.12);
+    --knx-shadow: 0 14px 34px rgba(20, 24, 31, 0.12);
+    --knx-soft-shadow: 0 8px 22px rgba(20, 24, 31, 0.08);
+    --knx-ui-primary: var(--primary-color, var(--mdc-theme-primary, var(--knx-orange)));
+    --knx-ui-primary-hover: var(--primary-color-hover, var(--knx-orange-dark));
+    --knx-ui-primary-active: var(--primary-color-active, var(--knx-orange-dark));
+  }
+
+  .knx-ui-shell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    color: #20242a;
+  }
+
+  .knx-hero {
+    position: relative;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #20242a;
+  }
+
+  .knx-hero::after {
+    content: none;
+  }
+
+  .knx-hero-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0;
+  }
+
+  .knx-logo-lockup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1rem, 4vw, 2.3rem);
+    width: 100%;
+  }
+
+  .knx-homebridge-logo {
+    display: block;
+    width: clamp(4.2rem, 11vw, 6.1rem);
+    height: clamp(4.2rem, 11vw, 6.1rem);
+    flex: 0 0 auto;
+    filter: drop-shadow(0 7px 12px rgba(73, 31, 89, 0.16));
+  }
+
+  .knx-logo-image {
+    display: block;
+    width: min(13rem, 38vw);
+    max-width: 100%;
+    height: auto;
+    filter: drop-shadow(0 7px 12px rgba(0, 128, 55, 0.14));
+  }
+
+  .knx-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    box-shadow: none;
+    overflow: hidden;
+  }
+
+  .knx-tabs .nav-item {
+    flex: 1 1 12rem;
+  }
+
+  .knx-tabs .nav-link {
+    width: 100%;
+    border: 1px solid var(--knx-ui-primary);
+    border-radius: 0;
+    background: var(--knx-ui-primary);
+    color: #fff;
+    font-family: inherit;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    box-shadow: none;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+  }
+
+  .knx-tabs .nav-item:first-child .nav-link {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+  }
+
+  .knx-tabs .nav-item:last-child .nav-link {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+  }
+
+  .knx-tabs .nav-link:hover,
+  .knx-tabs .nav-link:focus {
+    background: var(--knx-ui-primary-hover);
+    border-color: var(--knx-ui-primary-hover);
+    color: #fff;
+  }
+
+  .knx-tabs .nav-link.active {
+    background: #242424;
+    border-color: #242424;
+    color: #fff;
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.18);
+  }
+
+  .knx-plugin-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .knx-plugin-heading-logo {
+    display: block;
+    width: 2.25rem;
+    height: auto;
+    flex: 0 0 auto;
+  }
+
+  .knx-card {
+    border: 1px solid var(--knx-border);
+    border-radius: 1rem;
+    box-shadow: var(--knx-soft-shadow);
+    overflow: hidden;
+  }
+
+  .knx-card .card-body {
+    padding: 1.1rem;
+  }
+
+  .knx-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .knx-card-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #252a31;
+  }
+
+  .knx-card-copy {
+    margin: 0.25rem 0 0;
+    max-width: 56rem;
+    color: var(--knx-muted);
+  }
+
+  .knx-settings-layout {
+    display: block;
+  }
+
+  .knx-form-section {
+    padding: 1rem;
+    border: 1px solid var(--knx-border);
+    border-radius: 0.9rem;
+    background: #fff;
+  }
+
+  .knx-form-section + .knx-form-section {
+    margin-top: 1rem;
+  }
+
+  .knx-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+    color: #252a31;
+    font-size: 0.98rem;
+    font-weight: 850;
+  }
+
+  .knx-section-heading::before {
+    content: "";
+    width: 0.35rem;
+    height: 1.25rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--knx-orange), var(--knx-green));
+  }
+
+  .knx-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .knx-field-grid .knx-span-2 {
+    grid-column: 1 / -1;
+  }
+
+  .knx-editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .knx-editor-commandbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem;
+    border: 1px solid var(--knx-border);
+    border-radius: 0.9rem;
+    background: #f8fafc;
+  }
+
+  .knx-editor-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: end;
+    margin-bottom: 0.85rem;
+  }
+
+  .knx-codemirror-host {
+    width: 100%;
+  }
+
+  .knx-codemirror-host .CodeMirror {
+    height: min(62vh, 640px) !important;
+    min-height: 500px !important;
+    max-height: 640px !important;
+    border: 1px solid rgba(33, 37, 41, 0.18);
+    border-radius: 0.9rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 22px rgba(20, 24, 31, 0.08);
+    font-size: 0.875rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+
+  .knx-codemirror-host .CodeMirror-scroll {
+    height: min(62vh, 640px) !important;
+    min-height: 500px !important;
+    max-height: 640px !important;
+    overflow: auto !important;
+  }
+
+  .knx-codemirror-host.d-none,
+  #editorFallback.d-none {
+    display: none !important;
+  }
+
+  #editorFallback {
+    width: 100%;
+    height: min(62vh, 640px) !important;
+    min-height: 500px !important;
+    max-height: 640px !important;
+    border-radius: 0.9rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.875rem;
+    line-height: 16px !important;
+    tab-size: 4;
+  }
+
+  .knx-codemirror-host .CodeMirror,
+  .knx-codemirror-host .CodeMirror pre,
+  .knx-codemirror-host .CodeMirror-line,
+  .knx-codemirror-host pre.CodeMirror-line,
+  .knx-codemirror-host pre.CodeMirror-line-like,
+  .knx-codemirror-host .CodeMirror-linenumber {
+    line-height: 16px !important;
+    min-height: 16px !important;
+  }
+
+  .knx-codemirror-host .cm-property { color: #0451a5 !important; }
+  .knx-codemirror-host .cm-string { color: #a31515 !important; }
+  .knx-codemirror-host .cm-number { color: #098658 !important; }
+  .knx-codemirror-host .cm-atom,
+  .knx-codemirror-host .cm-keyword { color: #0000ff !important; }
+  .knx-codemirror-host .cm-def,
+  .knx-codemirror-host .cm-variable,
+  .knx-codemirror-host .cm-variable-2 { color: #001080 !important; }
+  .knx-codemirror-host .cm-punctuation,
+  .knx-codemirror-host .cm-bracket { color: #444 !important; }
+
+  .knx-codemirror-host.knx-yaml-mode .cm-def,
+  .knx-codemirror-host.knx-yaml-mode .cm-keyword,
+  .knx-codemirror-host.knx-yaml-mode .cm-atom:first-child {
+    color: #0451a5 !important;
+    font-weight: 600 !important;
+  }
+
+  .knx-codemirror-host.knx-yaml-mode .cm-string { color: #a31515 !important; }
+  .knx-codemirror-host.knx-yaml-mode .cm-number { color: #098658 !important; }
+  .knx-codemirror-host.knx-yaml-mode .cm-atom { color: #0000ff !important; }
+  .knx-codemirror-host.knx-yaml-mode .cm-meta { color: #795e26 !important; }
+  .knx-codemirror-host.knx-yaml-mode .cm-comment { color: #008000 !important; font-style: italic; }
+  .knx-codemirror-host.knx-yaml-mode .cm-punctuation,
+  .knx-codemirror-host.knx-yaml-mode .cm-bracket { color: #444 !important; }
+  .knx-codemirror-host.knx-json-mode .cm-string:not(.cm-property) { color: #a31515 !important; font-weight: 400 !important; }
+  .knx-codemirror-host.knx-json-mode .cm-string.cm-property,
+  .knx-codemirror-host.knx-json-mode .cm-property { color: #0451a5 !important; font-weight: 600 !important; }
+  .knx-codemirror-host.knx-json-mode .cm-number { color: #098658 !important; }
+  .knx-codemirror-host.knx-json-mode .cm-atom { color: #0000ff !important; }
+  .knx-codemirror-host.knx-json-mode .cm-bracket,
+  .knx-codemirror-host.knx-json-mode .cm-punctuation { color: #444 !important; }
+
+  .knx-codemirror-host .CodeMirror {
+    font-size: 13px !important;
+    line-height: 16px !important;
+  }
+
+  .knx-codemirror-host .CodeMirror-lines {
+    padding: 4px 0 !important;
+  }
+
+  .knx-codemirror-host .CodeMirror pre,
+  .knx-codemirror-host .CodeMirror-line,
+  .knx-codemirror-host pre.CodeMirror-line,
+  .knx-codemirror-host pre.CodeMirror-line-like {
+    line-height: 16px !important;
+    min-height: 16px !important;
+    height: 16px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin: 0 !important;
+  }
+
+  .knx-codemirror-host .CodeMirror-linenumber {
+    line-height: 16px !important;
+    height: 16px !important;
+  }
+
+  .knx-codemirror-host .CodeMirror-cursors {
+    z-index: 10;
+  }
+
+  .knx-codemirror-host .knx-leading-indent-space {
+    position: relative;
+    color: transparent;
+    background-image: radial-gradient(circle, rgba(15, 23, 42, 0.38) 0 1.2px, transparent 1.35px);
+    background-position: 50% 56%;
+    background-repeat: no-repeat;
+    pointer-events: none;
+  }
+
+  .knx-indent-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .knx-path {
+    word-break: break-all;
+  }
+
+  .knx-loading-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    border-radius: 1rem;
+    background: rgba(248, 250, 252, 0.72);
+    backdrop-filter: blur(3px);
+  }
+
+  .knx-ui-shell.knx-is-loading .knx-loading-overlay {
+    display: flex;
+  }
+
+  .knx-loading-box {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: var(--knx-shadow);
+    color: var(--knx-charcoal);
+    font-weight: 800;
+  }
+
+  .knx-spinner {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    border: 0.32rem solid rgba(245, 130, 32, 0.2);
+    border-top-color: var(--knx-orange);
+    border-right-color: var(--knx-green);
+    animation: knx-spin 0.78s linear infinite;
+  }
+
+  @keyframes knx-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 760px) {
+    .knx-editor-meta,
+    .knx-field-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .knx-hero-inner {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .knx-logo-lockup {
+      justify-content: center;
+    }
+
+    .knx-tabs {
+      flex-direction: column;
+    }
+
+  }
+</style>
+
+<div id="knxUiShell" class="knx-ui-shell">
+  <header class="knx-hero" aria-label="homebridge-knx custom UI header">
+    <div class="knx-hero-inner">
+      <div class="knx-logo-lockup" aria-label="Homebridge KNX">
+        <img class="knx-homebridge-logo" src="./homebridge-logo.svg" alt="Original Homebridge Logo">
+        <img class="knx-logo-image" src="./knx-logo.svg" alt="Grüner KNX Schriftzug ohne Hintergrund">
+      </div>
+    </div>
+  </header>
+
+  <ul class="nav nav-tabs knx-tabs" id="knxTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="plugin-settings-tab" type="button" role="tab" aria-controls="plugin-settings-panel" aria-selected="true" data-knx-tab="plugin-settings-panel">
+        Plugin-Einstellungen
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="knx-editor-tab" type="button" role="tab" aria-controls="knx-editor-panel" aria-selected="false" data-knx-tab="knx-editor-panel">
+        KNX Config Editor
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+    <section id="plugin-settings-panel" class="tab-pane active" role="tabpanel" aria-labelledby="plugin-settings-tab">
+      <div class="card knx-card mb-3">
+        <div class="card-body">
+          <div class="knx-card-header">
+            <div>
+              <div class="knx-plugin-heading">
+                <img class="knx-plugin-heading-logo" src="./knx-logo.svg" alt="KNX Logo">
+                <h2 class="knx-card-title">Plugin-Einstellungen</h2>
+              </div>
+              <p class="knx-card-copy">
+                Bearbeitet den ersten Homebridge-Platform-Eintrag mit <code>platform === "KNX"</code> über den nativen Homebridge-Speichern-Button. Die externe KNX-Gerätekonfiguration bleibt im separaten Editor-Tab.
+              </p>
+            </div>
+          </div>
+          <div class="alert alert-info mb-0">
+            <strong>Homebridge-Neustart erforderlich.</strong> Das Speichern aktualisiert <code>config.json</code>, startet Homebridge aber nicht automatisch neu.
+          </div>
+        </div>
+      </div>
+
+      <div class="card knx-card mb-3">
+        <div class="card-body">
+          <div class="knx-settings-layout">
+            <form id="platformConfigForm" novalidate>
+              <div class="knx-form-section">
+                <div class="knx-section-heading">Basis-Konfiguration</div>
+                <div class="knx-field-grid">
+                  <div>
+                    <label class="form-label" for="platformName">Anzeigename</label>
+                    <input id="platformName" class="form-control" type="text" autocomplete="off">
+                  </div>
+
+                  <div>
+                    <label class="form-label" for="platformKnxPhyAddr">KNX physikalische Adresse</label>
+                    <input id="platformKnxPhyAddr" class="form-control" type="text" autocomplete="off">
+                  </div>
+
+                  <div class="knx-span-2">
+                    <label class="form-label" for="platformConfigPath">KNX-Konfigurationspfad</label>
+                    <input id="platformConfigPath" class="form-control knx-path" type="text" required autocomplete="off">
+                    <div class="invalid-feedback">Bitte einen KNX-Konfigurationspfad angeben.</div>
+                    <div class="form-text">Pfad zur externen JSON/YAML-KNX-Gerätekonfigurationsdatei oder zu einem Verzeichnis. Ein Verzeichnis kann mehrere Konfigurationsdateien enthalten; alle Dateien mit <code>.json</code>, <code>.yaml</code> oder <code>.yml</code>-Endung werden geladen.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="knx-form-section">
+                <div class="knx-section-heading">KNX-Verbindung</div>
+                <div class="knx-field-grid">
+                  <div class="knx-span-2">
+                    <label class="form-label" for="platformKnxConnection">KNX-Verbindungsart</label>
+                    <select id="platformKnxConnection" class="form-select" required>
+                      <option value="">Verbindung auswählen...</option>
+                      <option value="knxd">knxd</option>
+                      <option value="knxjs">knxjs</option>
+                    </select>
+                    <div class="invalid-feedback">Bitte eine KNX-Verbindungsart auswählen.</div>
+                  </div>
+
+                  <div id="knxdFields" class="knx-span-2">
+                    <div class="knx-field-grid">
+                      <div>
+                        <label class="form-label" for="platformKnxdIp">KNXD Server-IP</label>
+                        <input id="platformKnxdIp" class="form-control" type="text" autocomplete="off">
+                      </div>
+
+                      <div>
+                        <label class="form-label" for="platformKnxdPort">KNXD Server-Port</label>
+                        <input id="platformKnxdPort" class="form-control" type="number" min="1" max="65535" step="1">
+                        <div class="invalid-feedback">Bitte einen Port zwischen 1 und 65535 angeben.</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="platformStatus" class="alert alert-secondary mt-3 mb-0" role="alert">Plugin-Einstellungen werden geladen...</div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="knx-editor-panel" class="tab-pane d-none" role="tabpanel" aria-labelledby="knx-editor-tab">
+      <div class="card knx-card mb-3">
+        <div class="card-body">
+          <div class="knx-card-header">
+            <h2 class="knx-card-title">KNX Config Editor</h2>
+          </div>
+
+          <input id="configPath" type="hidden" readonly value="Loading...">
+
+          <div class="knx-editor-meta">
+            <div id="directoryPanel" class="d-none">
+              <label class="form-label mb-1" for="fileSelect">Configuration file</label>
+              <select id="fileSelect" class="form-select"></select>
+              <div id="directoryMessage" class="form-text"></div>
+            </div>
+          </div>
+
+          <label class="form-label mb-1" for="editorFallback">File content</label>
+          <div id="codeMirrorHost" class="knx-codemirror-host d-none"></div>
+          <textarea id="editorFallback" class="form-control d-none" spellcheck="false" disabled></textarea>
+
+          <div class="knx-editor-commandbar mt-3 mb-3">
+            <div class="knx-editor-toolbar">
+              <label class="form-check knx-indent-toggle" for="showIndentationToggle">
+                <input id="showIndentationToggle" class="form-check-input" type="checkbox">
+                <span class="form-check-label">Einrückung anzeigen</span>
+              </label>
+              <button id="reloadButton" type="button" class="btn btn-secondary">NEU LADEN</button>
+              <button id="searchButton" type="button" class="btn btn-outline-secondary" disabled>Suchen</button>
+              <button id="formatJsonButton" type="button" class="btn btn-outline-secondary d-none" disabled>FORMAT JSON</button>
+              <button id="validateButton" type="button" class="btn btn-primary" disabled>VALIDIEREN</button>
+            </div>
+            <button id="saveButton" type="button" class="btn btn-success" disabled>SPEICHERN</button>
+          </div>
+
+          <div id="status" class="alert alert-secondary mb-0" role="alert">Open this tab to load the KNX configuration.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="knxLoadingOverlay" class="knx-loading-overlay" role="status" aria-live="polite" aria-hidden="true">
+    <div class="knx-loading-box">
+      <div class="knx-spinner" aria-hidden="true"></div>
+      <div id="knxLoadingText">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (() => {
+    const knxUiShell = document.getElementById('knxUiShell');
+    const knxLoadingOverlay = document.getElementById('knxLoadingOverlay');
+    const knxLoadingText = document.getElementById('knxLoadingText');
+    const tabButtons = Array.from(document.querySelectorAll('[data-knx-tab]'));
+    const tabPanels = Array.from(document.querySelectorAll('.tab-pane'));
+
+    const platformForm = document.getElementById('platformConfigForm');
+    const platformName = document.getElementById('platformName');
+    const platformConfigPath = document.getElementById('platformConfigPath');
+    const platformKnxConnection = document.getElementById('platformKnxConnection');
+    const knxdFields = document.getElementById('knxdFields');
+    const platformKnxdIp = document.getElementById('platformKnxdIp');
+    const platformKnxdPort = document.getElementById('platformKnxdPort');
+    const platformKnxPhyAddr = document.getElementById('platformKnxPhyAddr');
+    const platformStatus = document.getElementById('platformStatus');
+
+    const configPathInput = document.getElementById('configPath');
+    const directoryPanel = document.getElementById('directoryPanel');
+    const directoryMessage = document.getElementById('directoryMessage');
+    const fileSelect = document.getElementById('fileSelect');
+    const codeMirrorHost = document.getElementById('codeMirrorHost');
+    const editorFallback = document.getElementById('editorFallback');
+    const status = document.getElementById('status');
+    const reloadButton = document.getElementById('reloadButton');
+    const searchButton = document.getElementById('searchButton');
+    const formatJsonButton = document.getElementById('formatJsonButton');
+    const showIndentationToggle = document.getElementById('showIndentationToggle');
+    const validateButton = document.getElementById('validateButton');
+    const saveButton = document.getElementById('saveButton');
+
+    const CODEMIRROR_BASE_PATH = './vendor/codemirror';
+    const SHOW_INDENTATION_STORAGE_KEY = 'homebridge-knx.showIndentation';
+    const KNX_PLATFORM_ALIAS = 'KNX';
+    // Internal marker only used to make Homebridge Config UI's native save flow detect
+    // that an externally saved KNX config file needs the standard restart dialog.
+    const EXTERNAL_CONFIG_SAVED_MARKER_FIELD = '_knx_ui_external_config_saved_at';
+
+    const CODEMIRROR_ASSETS = [
+      { type: 'style', url: `${CODEMIRROR_BASE_PATH}/lib/codemirror.css` },
+      { type: 'style', url: `${CODEMIRROR_BASE_PATH}/addon/dialog/dialog.css` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/lib/codemirror.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/mode/javascript/javascript.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/mode/yaml/yaml.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/addon/dialog/dialog.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/addon/search/searchcursor.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/addon/search/search.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/addon/edit/matchbrackets.js` },
+      { type: 'script', url: `${CODEMIRROR_BASE_PATH}/addon/display/placeholder.js` },
+    ];
+
+    let mode = null;
+    let selectedFile = null;
+    let currentExtension = '';
+    let editorLoaded = false;
+    let cmEditor = null;
+    let codeMirrorInitialised = false;
+    let codeMirrorAvailable = false;
+    let showIndentation = localStorage.getItem(SHOW_INDENTATION_STORAGE_KEY) === 'true';
+    let platformConfigLoading = false;
+    let configMetadataLoading = false;
+    let initialiseRunning = false;
+    let initialiseRetryTimer = null;
+    let loadingOverlayDepth = 0;
+    let indentationMarkers = [];
+    let indentationMarkerTimer = null;
+
+    function pluginVersion() {
+      return (
+        window._homebridge
+        && window._homebridge.plugin
+        && window._homebridge.plugin.installedVersion
+      ) || Date.now();
+    }
+
+    function withCacheBust(url) {
+      return `${url}?v=${encodeURIComponent(pluginVersion())}`;
+    }
+
+    function fixScrollHeight() {
+      if (window.homebridge && typeof homebridge.fixScrollHeight === 'function') {
+        homebridge.fixScrollHeight();
+      }
+    }
+
+    function setLoadingOverlay(visible, message = 'Loading...') {
+      if (visible) {
+        loadingOverlayDepth += 1;
+        knxLoadingText.textContent = message;
+      } else {
+        loadingOverlayDepth = Math.max(0, loadingOverlayDepth - 1);
+      }
+
+      const active = loadingOverlayDepth > 0;
+      knxUiShell.classList.toggle('knx-is-loading', active);
+      knxLoadingOverlay.setAttribute('aria-hidden', active ? 'false' : 'true');
+      if (!active) {
+        knxLoadingText.textContent = 'Loading...';
+      }
+      fixScrollHeight();
+    }
+
+    function requestWithTimeout(endpoint, payload, timeoutMs = 8000) {
+      let timeoutId;
+      const apiRequest = payload === undefined
+        ? homebridge.request(endpoint)
+        : homebridge.request(endpoint, payload);
+
+      const timeoutRequest = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`Request timeout: ${endpoint}`)), timeoutMs);
+      });
+
+      return Promise.race([apiRequest, timeoutRequest])
+        .finally(() => clearTimeout(timeoutId));
+    }
+
+    function setPlatformStatus(message, type = 'secondary') {
+      platformStatus.className = `alert alert-${type}`;
+      platformStatus.textContent = message;
+      fixScrollHeight();
+    }
+
+    function setStatus(message, type = 'secondary') {
+      status.className = `alert alert-${type}`;
+      status.textContent = message;
+      fixScrollHeight();
+    }
+
+    function setPlatformBusy(busy) {
+      for (const input of platformForm.querySelectorAll('input, select')) {
+        input.disabled = busy;
+      }
+      updateKnxdVisibility();
+    }
+
+    function applyPlatformConfig(config = {}) {
+      platformName.value = config.name || '';
+      platformConfigPath.value = config.config_path || '';
+      platformKnxConnection.value = config.knxconnection || '';
+      platformKnxdIp.value = config.knxd_ip || '';
+      platformKnxdPort.value = config.knxd_port || '';
+      platformKnxPhyAddr.value = config.knx_phy_addr || '';
+      updateKnxdVisibility();
+    }
+
+    function setBusy(busy) {
+      reloadButton.disabled = busy;
+      searchButton.disabled = busy || !selectedFile || !codeMirrorAvailable;
+      formatJsonButton.disabled = busy || !selectedFile || currentExtension !== '.json';
+      validateButton.disabled = busy || !selectedFile;
+      saveButton.disabled = busy || !selectedFile;
+      if (cmEditor && codeMirrorAvailable) {
+        cmEditor.setOption('readOnly', busy || !selectedFile);
+      }
+      editorFallback.disabled = busy || !selectedFile;
+      updateFormatJsonVisibility();
+    }
+
+    function showPlatformError(error) {
+      const message = error && error.message ? error.message : String(error);
+      setPlatformStatus(message, 'danger');
+      if (window.homebridge && homebridge.toast && homebridge.toast.error) {
+        homebridge.toast.error(message, 'Plugin-Einstellungen');
+      }
+    }
+
+    function showError(error) {
+      const message = error && error.message ? error.message : String(error);
+      setStatus(message, 'danger');
+      if (window.homebridge && homebridge.toast && homebridge.toast.error) {
+        homebridge.toast.error(message, 'KNX Config Editor');
+      }
+    }
+
+    function currentPayload() {
+      return {
+        file: mode === 'directory' ? selectedFile : undefined,
+      };
+    }
+
+    function assertNativeConfigSaveApiAvailable() {
+      if (!window.homebridge) {
+        throw new Error('Homebridge Config UI API is not available.');
+      }
+
+      for (const method of ['getPluginConfig', 'updatePluginConfig', 'enableSaveButton']) {
+        if (typeof homebridge[method] !== 'function') {
+          throw new Error(`Homebridge Config UI API method ${method}() is not available.`);
+        }
+      }
+    }
+
+    function findKnxPlatformConfigIndex(pluginConfig) {
+      if (!Array.isArray(pluginConfig)) {
+        return -1;
+      }
+
+      return pluginConfig.findIndex((entry) => entry && entry.platform === KNX_PLATFORM_ALIAS);
+    }
+
+    async function markExternalConfigSavedForNativeSave() {
+      assertNativeConfigSaveApiAvailable();
+
+      const pluginConfig = await homebridge.getPluginConfig();
+      const platformIndex = findKnxPlatformConfigIndex(pluginConfig);
+
+      if (platformIndex === -1) {
+        throw new Error('No KNX platform config found in Homebridge plugin configuration.');
+      }
+
+      const updatedConfig = pluginConfig.map((entry, index) => {
+        if (index !== platformIndex) {
+          return entry;
+        }
+
+        return {
+          ...entry,
+          [EXTERNAL_CONFIG_SAVED_MARKER_FIELD]: new Date().toISOString(),
+        };
+      });
+
+      await homebridge.updatePluginConfig(updatedConfig);
+      homebridge.enableSaveButton();
+    }
+
+    function updateKnxdVisibility() {
+      const usesKnxd = platformKnxConnection.value === 'knxd';
+      knxdFields.classList.toggle('d-none', !usesKnxd);
+      platformKnxdIp.disabled = !usesKnxd || platformConfigLoading;
+      platformKnxdPort.disabled = !usesKnxd || platformConfigLoading;
+      fixScrollHeight();
+    }
+
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        if (document.querySelector(`script[data-knx-src="${src}"]`)) {
+          resolve();
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = withCacheBust(src);
+        script.async = false;
+        script.dataset.knxSrc = src;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`Unable to load script ${src}.`));
+        document.head.appendChild(script);
+      });
+    }
+
+    function loadStylesheet(href) {
+      return new Promise((resolve, reject) => {
+        if (document.querySelector(`link[data-knx-href="${href}"]`)) {
+          resolve();
+          return;
+        }
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = withCacheBust(href);
+        link.dataset.knxHref = href;
+        link.onload = resolve;
+        link.onerror = () => reject(new Error(`Unable to load stylesheet ${href}`));
+        document.head.appendChild(link);
+      });
+    }
+
+    function leadingSpacesForLine(line) {
+      const text = line && typeof line.text === 'string' ? line.text : '';
+      const match = text.match(/^ +/);
+      return match ? match[0].length : 0;
+    }
+
+    function clearIndentationMarkers() {
+      for (const marker of indentationMarkers) {
+        marker.clear();
+      }
+      indentationMarkers = [];
+    }
+
+    function applyIndentationMarkers() {
+      if (!cmEditor) {
+        return;
+      }
+
+      clearIndentationMarkers();
+      if (!showIndentation) {
+        cmEditor.refresh();
+        return;
+      }
+
+      cmEditor.operation(() => {
+        cmEditor.eachLine((line) => {
+          const spaceCount = leadingSpacesForLine(line);
+          if (spaceCount === 0) {
+            return;
+          }
+
+          const lineNumber = cmEditor.getLineNumber(line);
+          if (lineNumber === null) {
+            return;
+          }
+
+          for (let character = 0; character < spaceCount; character += 1) {
+            indentationMarkers.push(cmEditor.markText(
+              { line: lineNumber, ch: character },
+              { line: lineNumber, ch: character + 1 },
+              { className: 'knx-leading-indent-space' }
+            ));
+          }
+        });
+      });
+      cmEditor.refresh();
+    }
+
+    function scheduleIndentationMarkers() {
+      if (indentationMarkerTimer) {
+        clearTimeout(indentationMarkerTimer);
+      }
+      indentationMarkerTimer = setTimeout(() => {
+        indentationMarkerTimer = null;
+        applyIndentationMarkers();
+      }, 0);
+    }
+
+    function updateIndentationToggle() {
+      showIndentationToggle.checked = showIndentation;
+      if (cmEditor) {
+        scheduleIndentationMarkers();
+      }
+    }
+
+    function toggleIndentationMarkers() {
+      showIndentation = showIndentationToggle.checked;
+      localStorage.setItem(SHOW_INDENTATION_STORAGE_KEY, showIndentation ? 'true' : 'false');
+      if (cmEditor) {
+        applyIndentationMarkers();
+      }
+    }
+
+    function editorModeForExtension(extension) {
+      if (extension === '.json') {
+        return { name: "javascript", json: true };
+      }
+
+      if (extension === '.yaml' || extension === '.yml') {
+        return 'yaml';
+      }
+
+      return 'text/plain';
+    }
+
+    function updateEditorModeClass() {
+      const isJson = currentExtension === '.json';
+      const isYaml = currentExtension === '.yaml' || currentExtension === '.yml';
+      if (isJson) {
+        codeMirrorHost.classList.add('knx-json-mode');
+      } else {
+        codeMirrorHost.classList.remove('knx-json-mode');
+      }
+      if (isYaml) {
+        codeMirrorHost.classList.add('knx-yaml-mode');
+      } else {
+        codeMirrorHost.classList.remove('knx-yaml-mode');
+      }
+      if (cmEditor && cmEditor.getWrapperElement()) {
+        cmEditor.getWrapperElement().classList.toggle('knx-json-mode', isJson);
+      }
+    }
+
+    function updateEditorLanguage() {
+      updateEditorModeClass();
+      if (cmEditor) {
+        cmEditor.setOption('mode', editorModeForExtension(currentExtension));
+      }
+      refreshEditorSoon();
+    }
+
+    function updateFormatJsonVisibility() {
+      const show = currentExtension === '.json' && Boolean(selectedFile);
+      formatJsonButton.classList.toggle('d-none', !show);
+    }
+
+    function showCodeMirror() {
+      codeMirrorAvailable = true;
+      codeMirrorHost.classList.remove('d-none');
+      editorFallback.classList.add('d-none');
+    }
+
+    function showTextareaFallback() {
+      codeMirrorAvailable = false;
+      codeMirrorHost.classList.add('d-none');
+      editorFallback.classList.remove('d-none');
+    }
+
+    async function ensureCodeEditor() {
+      if (codeMirrorInitialised) {
+        return;
+      }
+
+      codeMirrorInitialised = true;
+
+      try {
+        for (const asset of CODEMIRROR_ASSETS) {
+          if (asset.type === 'style') {
+            await loadStylesheet(asset.url);
+          } else {
+            await loadScript(asset.url);
+          }
+        }
+
+        if (typeof window.CodeMirror !== 'function') {
+          throw new Error('CodeMirror constructor is not available.');
+        }
+
+        codeMirrorHost.textContent = '';
+        cmEditor = window.CodeMirror(codeMirrorHost, {
+          value: editorFallback.value || '',
+          lineNumbers: true,
+          mode: editorModeForExtension(currentExtension),
+          matchBrackets: true,
+          indentUnit: 4,
+          tabSize: 4,
+          indentWithTabs: false,
+          lineWrapping: false,
+          readOnly: true,
+          extraKeys: {
+            'Ctrl-F': openEditorSearch,
+            'Cmd-F': openEditorSearch,
+            'Ctrl-G': findNextEditorSearchResult,
+            'Cmd-G': findNextEditorSearchResult,
+            'Shift-Ctrl-G': findPreviousEditorSearchResult,
+            'Shift-Cmd-G': findPreviousEditorSearchResult,
+          },
+        });
+        cmEditor.on('changes', scheduleIndentationMarkers);
+        updateIndentationToggle();
+        window.knxCodeMirrorEditor = cmEditor;
+        window.knxCodeMirrorDebug = {
+          codeMirrorHost,
+          editorFallback,
+          getEditor: () => cmEditor,
+          getWrapper: () => cmEditor && cmEditor.getWrapperElement(),
+          refreshEditorSoon,
+        };
+        showCodeMirror();
+        refreshEditorSoon();
+      } catch (error) {
+        showTextareaFallback();
+        cmEditor = null;
+        console.warn('[homebridge-knx] CodeMirror could not be loaded; using textarea fallback.', error);
+      }
+    }
+
+    function getEditorValue() {
+      return cmEditor && codeMirrorAvailable ? cmEditor.getValue() : editorFallback.value;
+    }
+
+    function setEditorValue(value) {
+      const nextValue = value || '';
+      editorFallback.value = nextValue;
+      if (cmEditor) {
+        cmEditor.setValue(nextValue);
+        scheduleIndentationMarkers();
+        refreshEditorSoon();
+      }
+    }
+
+    function refreshEditorSoon() {
+      if (cmEditor) {
+        const wrapper = cmEditor.getWrapperElement();
+        if (wrapper) {
+          wrapper.style.height = 'min(62vh, 640px)';
+          wrapper.style.minHeight = '500px';
+          wrapper.style.maxHeight = '640px';
+          wrapper.style.display = 'block';
+          updateEditorModeClass();
+        }
+        requestAnimationFrame(() => cmEditor.refresh());
+        setTimeout(() => cmEditor.refresh(), 50);
+        setTimeout(() => cmEditor.refresh(), 250);
+        setTimeout(() => cmEditor.refresh(), 1000);
+      }
+      fixScrollHeight();
+    }
+
+    function layoutEditor() {
+      refreshEditorSoon();
+    }
+
+    function updateLoadedFileStatus(fileName) {
+      if (cmEditor && codeMirrorAvailable && cmEditor.getWrapperElement()) {
+        setStatus(`Loaded ${fileName}. CodeMirror editor active.`, 'success');
+      } else {
+        setStatus(`Loaded ${fileName}. Textarea fallback active.`, 'warning');
+      }
+    }
+
+    async function setActiveTab(panelId) {
+      for (const button of tabButtons) {
+        const active = button.dataset.knxTab === panelId;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      }
+
+      for (const panel of tabPanels) {
+        const active = panel.id === panelId;
+        panel.classList.toggle('active', active);
+        panel.classList.toggle('d-none', !active);
+      }
+
+      if (panelId === 'plugin-settings-panel') {
+        await loadPlatformConfig({ force: true });
+      }
+
+      if (panelId === 'knx-editor-panel') {
+        editorLoaded = false;
+        await loadConfigMetadata({ force: true });
+        editorLoaded = true;
+      }
+
+      refreshEditorSoon();
+      fixScrollHeight();
+    }
+
+    async function safeInitialise(reason = 'initial') {
+      if (initialiseRunning) return;
+
+      if (!window.homebridge || typeof homebridge.request !== 'function') {
+        if (!initialiseRetryTimer) {
+          initialiseRetryTimer = setTimeout(() => {
+            initialiseRetryTimer = null;
+            safeInitialise(reason);
+          }, 200);
+        }
+        return;
+      }
+
+      if (initialiseRetryTimer) {
+        clearTimeout(initialiseRetryTimer);
+        initialiseRetryTimer = null;
+      }
+
+      platformConfigLoading = false;
+      configMetadataLoading = false;
+
+      setPlatformBusy(false);
+      setBusy(false);
+
+      initialiseRunning = true;
+      try {
+        if (typeof homebridge.disableSaveButton === 'function') {
+          homebridge.disableSaveButton();
+        }
+
+        await loadPlatformConfig({ force: true });
+
+        const editorPanelActive = document
+          .getElementById('knx-editor-panel')
+          ?.classList.contains('active');
+
+        if (editorPanelActive) {
+          editorLoaded = false;
+          await loadConfigMetadata({ force: true });
+          editorLoaded = true;
+        }
+      } catch (error) {
+        console.warn('[homebridge-knx] initialise failed', reason, error);
+      } finally {
+        initialiseRunning = false;
+        refreshEditorSoon();
+        fixScrollHeight();
+      }
+    }
+
+    async function loadPlatformConfig({ force = false } = {}) {
+      if (platformConfigLoading && !force) return;
+      if (force) {
+        platformConfigLoading = false;
+      }
+
+      platformConfigLoading = true;
+      setLoadingOverlay(true, 'Plugin-Einstellungen werden geladen...');
+      setPlatformBusy(true);
+      setPlatformStatus('Plugin-Einstellungen werden geladen...', 'secondary');
+
+      try {
+        assertNativeConfigSaveApiAvailable();
+        const pluginConfig = await homebridge.getPluginConfig();
+        const platformIndex = findKnxPlatformConfigIndex(pluginConfig);
+
+        if (platformIndex === -1) {
+          throw new Error('Keine KNX-Plattform-Konfiguration in der Homebridge-Plugin-Konfiguration gefunden.');
+        }
+
+        applyPlatformConfig(pluginConfig[platformIndex] || {});
+        validatePlatformForm();
+        setPlatformStatus('Plugin-Einstellungen geladen. Änderungen werden über den nativen Speichern-Button gesichert.', 'success');
+      } catch (error) {
+        showPlatformError(error);
+      } finally {
+        platformConfigLoading = false;
+        setPlatformBusy(false);
+        setLoadingOverlay(false);
+      }
+    }
+
+    function setFieldValidity(field, message = '') {
+      field.classList.toggle('is-invalid', Boolean(message));
+      field.setCustomValidity(message);
+    }
+
+    function validatePlatformForm() {
+      const configPath = platformConfigPath.value.trim();
+      const connection = platformKnxConnection.value;
+      const portValue = platformKnxdPort.value === '' ? '' : Number(platformKnxdPort.value);
+      const errors = [];
+
+      setFieldValidity(platformConfigPath);
+      setFieldValidity(platformKnxConnection);
+      setFieldValidity(platformKnxdPort);
+
+      if (!configPath) {
+        const message = 'Bitte einen KNX-Konfigurationspfad angeben.';
+        setFieldValidity(platformConfigPath, message);
+        errors.push(message);
+      }
+
+      if (connection !== 'knxd' && connection !== 'knxjs') {
+        const message = 'Bitte eine KNX-Verbindungsart auswählen.';
+        setFieldValidity(platformKnxConnection, message);
+        errors.push(message);
+      }
+
+      if (connection === 'knxd' && (!Number.isInteger(portValue) || portValue < 1 || portValue > 65535)) {
+        const message = 'Der KNXD Server-Port muss zwischen 1 und 65535 liegen.';
+        setFieldValidity(platformKnxdPort, message);
+        errors.push(message);
+      }
+
+      return errors;
+    }
+
+    function platformFormPayload() {
+      return {
+        name: platformName.value.trim(),
+        config_path: platformConfigPath.value.trim(),
+        knxconnection: platformKnxConnection.value,
+        knxd_ip: platformKnxdIp.value.trim(),
+        knxd_port: platformKnxdPort.value === '' ? '' : Number(platformKnxdPort.value),
+        knx_phy_addr: platformKnxPhyAddr.value.trim(),
+      };
+    }
+
+    async function updateNativePlatformConfig() {
+      assertNativeConfigSaveApiAvailable();
+
+      const pluginConfig = await homebridge.getPluginConfig();
+      const platformIndex = findKnxPlatformConfigIndex(pluginConfig);
+
+      if (platformIndex === -1) {
+        throw new Error('Keine KNX-Plattform-Konfiguration in der Homebridge-Plugin-Konfiguration gefunden.');
+      }
+
+      const payload = platformFormPayload();
+      const updatedConfig = pluginConfig.map((entry, index) => {
+        if (index !== platformIndex) {
+          return entry;
+        }
+
+        return {
+          ...entry,
+          ...payload,
+          platform: KNX_PLATFORM_ALIAS,
+        };
+      });
+
+      await homebridge.updatePluginConfig(updatedConfig);
+      homebridge.enableSaveButton();
+    }
+
+    let platformNativeSaveTimer = null;
+
+    function scheduleNativePlatformConfigUpdate() {
+      if (platformConfigLoading) {
+        return;
+      }
+
+      if (platformNativeSaveTimer) {
+        clearTimeout(platformNativeSaveTimer);
+      }
+
+      const errors = validatePlatformForm();
+      if (errors.length) {
+        if (typeof homebridge.disableSaveButton === 'function') {
+          homebridge.disableSaveButton();
+        }
+        setPlatformStatus(errors[0], 'danger');
+        return;
+      }
+
+      setPlatformStatus('Änderungen erkannt. Der native Speichern-Button wird vorbereitet...', 'secondary');
+      platformNativeSaveTimer = setTimeout(async () => {
+        platformNativeSaveTimer = null;
+        try {
+          await updateNativePlatformConfig();
+          setPlatformStatus('Plugin-Einstellungen sind gültig. Bitte unten rechts den nativen Speichern-Button klicken.', 'success');
+        } catch (error) {
+          showPlatformError(error);
+        }
+      }, 250);
+    }
+
+    function savePlatformConfig(event) {
+      event.preventDefault();
+      scheduleNativePlatformConfigUpdate();
+    }
+
+    function updateCurrentFile(file) {
+      selectedFile = file ? file.relative : null;
+      currentExtension = file && file.extension ? file.extension.toLowerCase() : extensionFromName(selectedFile);
+      updateEditorLanguage();
+      updateFormatJsonVisibility();
+    }
+
+    function extensionFromName(fileName) {
+      const match = typeof fileName === 'string' ? fileName.toLowerCase().match(/(\.json|\.ya?ml)$/) : null;
+      return match ? match[1] : '';
+    }
+
+    async function loadConfigMetadata({ force = false } = {}) {
+      if (configMetadataLoading && !force) return;
+      if (force) {
+        configMetadataLoading = false;
+      }
+
+      configMetadataLoading = true;
+      setLoadingOverlay(true, 'Loading KNX configuration...');
+      await ensureCodeEditor();
+      setBusy(true);
+      setStatus('Loading KNX configuration metadata...', 'secondary');
+      setEditorValue('');
+      updateCurrentFile(null);
+
+      try {
+        const response = await requestWithTimeout('/external-config/metadata');
+        mode = response.mode;
+        configPathInput.value = response.configPath || '';
+        setStatus('', 'success');
+
+        if (mode === 'directory') {
+          directoryPanel.classList.remove('d-none');
+          directoryMessage.textContent = response.message || 'Select a configuration file from this directory.';
+          fileSelect.innerHTML = '';
+
+          if (!response.files || response.files.length === 0) {
+            const option = document.createElement('option');
+            option.textContent = 'No JSON/YAML files found';
+            option.value = '';
+            fileSelect.appendChild(option);
+            setStatus(response.message || 'config_path points to a directory; no files are available.', 'warning');
+            setBusy(false);
+            validateButton.disabled = true;
+            saveButton.disabled = true;
+            editorFallback.disabled = true;
+            refreshEditorSoon();
+            layoutEditor();
+            return;
+          }
+
+          for (const file of response.files) {
+            const option = document.createElement('option');
+            option.textContent = file.relative;
+            option.value = file.relative;
+            option.dataset.extension = file.extension || extensionFromName(file.relative);
+            fileSelect.appendChild(option);
+          }
+
+          updateCurrentFile({ relative: fileSelect.value, extension: fileSelect.selectedOptions[0].dataset.extension });
+          await loadFile();
+          return;
+        }
+
+        directoryPanel.classList.add('d-none');
+        updateCurrentFile(response.file);
+        await loadFile();
+      } catch (error) {
+        showError(error);
+        setBusy(false);
+      } finally {
+        configMetadataLoading = false;
+        setBusy(false);
+        setLoadingOverlay(false);
+        layoutEditor();
+      }
+    }
+
+    async function loadFile() {
+      if (!selectedFile) {
+        setStatus('No file selected.', 'warning');
+        setBusy(false);
+        layoutEditor();
+        return;
+      }
+
+      setLoadingOverlay(true, 'Loading KNX file...');
+      setBusy(true);
+      setStatus('Loading file...', 'secondary');
+
+      try {
+        const response = await requestWithTimeout('/external-config/load', currentPayload());
+
+        if (response.mode === 'directory') {
+          setStatus(response.message || 'Select a file first.', 'warning');
+          setBusy(false);
+          layoutEditor();
+          return;
+        }
+
+        if (response.file) {
+          updateCurrentFile(response.file);
+        }
+        setEditorValue(response.content || '');
+        updateLoadedFileStatus(response.file.relative);
+        setBusy(false);
+        if (cmEditor && selectedFile) {
+          cmEditor.setOption('readOnly', false);
+          refreshEditorSoon();
+        }
+        refreshEditorSoon();
+        setTimeout(() => refreshEditorSoon(), 50);
+      } catch (error) {
+        showError(error);
+        setBusy(false);
+      } finally {
+        setLoadingOverlay(false);
+        layoutEditor();
+      }
+    }
+
+    async function validateFile() {
+      setLoadingOverlay(true, 'Validating configuration...');
+      setBusy(true);
+      setStatus('Validating...', 'secondary');
+
+      try {
+        const response = await requestWithTimeout('/external-config/validate', {
+          ...currentPayload(),
+          content: getEditorValue(),
+        });
+
+        setStatus(response.message || 'Configuration is valid.', 'success');
+        if (window.homebridge && homebridge.toast && homebridge.toast.success) {
+          homebridge.toast.success('Configuration is valid.', 'KNX Config Editor');
+        }
+      } catch (error) {
+        showError(error);
+      } finally {
+        setBusy(false);
+        setLoadingOverlay(false);
+      }
+    }
+
+    async function saveFile() {
+      setLoadingOverlay(true, 'Saving KNX configuration...');
+      setBusy(true);
+      setStatus('Validating and saving...', 'secondary');
+
+      try {
+        const response = await requestWithTimeout('/external-config/save', {
+          ...currentPayload(),
+          content: getEditorValue(),
+        });
+
+        await markExternalConfigSavedForNativeSave();
+
+        const backup = response.backup ? ` Backup: ${response.backup}.` : '';
+        setStatus(`Datei gespeichert.${backup} Bitte unten rechts Speichern klicken, um den Homebridge-Neustartdialog zu öffnen.`, 'success');
+        if (window.homebridge && homebridge.toast && homebridge.toast.success) {
+          homebridge.toast.success('Datei gespeichert. Bitte unten rechts Speichern klicken, um den Homebridge-Neustartdialog zu öffnen.', 'KNX Config Editor');
+        }
+      } catch (error) {
+        showError(error);
+      } finally {
+        setBusy(false);
+        setLoadingOverlay(false);
+      }
+    }
+
+    function isKnxEditorPanelActive() {
+      return document.getElementById('knx-editor-panel')?.classList.contains('active');
+    }
+
+    function codeMirrorCommands() {
+      return window.CodeMirror && window.CodeMirror.commands ? window.CodeMirror.commands : {};
+    }
+
+    function executeEditorCommand(command) {
+      if (!cmEditor || !codeMirrorAvailable || typeof cmEditor.execCommand !== 'function') {
+        return;
+      }
+
+      if (!codeMirrorCommands()[command]) {
+        return;
+      }
+
+      cmEditor.focus();
+      cmEditor.execCommand(command);
+    }
+
+    function openEditorSearch() {
+      if (!cmEditor || !codeMirrorAvailable) {
+        return;
+      }
+
+      executeEditorCommand(codeMirrorCommands().findPersistent ? 'findPersistent' : 'find');
+    }
+
+    function findNextEditorSearchResult() {
+      executeEditorCommand('findNext');
+    }
+
+    function findPreviousEditorSearchResult() {
+      executeEditorCommand('findPrev');
+    }
+
+    function handleEditorSearchShortcut(event) {
+      if (!isKnxEditorPanelActive() || !(event.ctrlKey || event.metaKey) || event.altKey) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+      if (key === 'f') {
+        event.preventDefault();
+        openEditorSearch();
+        return;
+      }
+
+      if (key === 'g') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          findPreviousEditorSearchResult();
+        } else {
+          findNextEditorSearchResult();
+        }
+      }
+    }
+
+    function formatJson() {
+      try {
+        const formatted = `${JSON.stringify(JSON.parse(getEditorValue()), null, 4)}\n`;
+        setEditorValue(formatted);
+        setStatus('JSON formatted.', 'success');
+        layoutEditor();
+      } catch (error) {
+        showError(new Error(`Unable to format JSON: ${error.message}`));
+      }
+    }
+
+    for (const button of tabButtons) {
+      button.addEventListener('click', () => {
+        setActiveTab(button.dataset.knxTab);
+      });
+    }
+
+    platformKnxConnection.addEventListener('change', () => {
+      updateKnxdVisibility();
+      scheduleNativePlatformConfigUpdate();
+    });
+    for (const input of [platformName, platformConfigPath, platformKnxdIp, platformKnxdPort, platformKnxPhyAddr]) {
+      input.addEventListener('input', scheduleNativePlatformConfigUpdate);
+      input.addEventListener('change', scheduleNativePlatformConfigUpdate);
+    }
+    platformForm.addEventListener('submit', savePlatformConfig);
+
+    fileSelect.addEventListener('change', async () => {
+      updateCurrentFile({
+        relative: fileSelect.value,
+        extension: fileSelect.selectedOptions[0] ? fileSelect.selectedOptions[0].dataset.extension : extensionFromName(fileSelect.value),
+      });
+      await loadFile();
+    });
+
+    reloadButton.addEventListener('click', () => {
+      configMetadataLoading = false;
+      setBusy(false);
+      loadConfigMetadata({ force: true });
+    });
+    searchButton.addEventListener('click', openEditorSearch);
+    formatJsonButton.addEventListener('click', formatJson);
+    showIndentationToggle.addEventListener('change', toggleIndentationMarkers);
+    updateIndentationToggle();
+    validateButton.addEventListener('click', validateFile);
+    saveButton.addEventListener('click', saveFile);
+    window.addEventListener('resize', layoutEditor);
+    document.addEventListener('keydown', handleEditorSearchShortcut);
+    if (window.homebridge && typeof homebridge.addEventListener === 'function') {
+      homebridge.addEventListener('ready', () => safeInitialise('ready'));
+    }
+
+    safeInitialise('script-load');
+  })();
+</script>

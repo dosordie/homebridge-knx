@@ -2,7 +2,7 @@
     "pluginAlias": "KNX",
     "pluginType": "platform",
     "singular": false,
-    "headerDisplay": "Configurable KNX interface for homebridge",
+    "headerDisplay": "Configure KNX platform instances, bus access, and external JSON/YAML KNX files from the Homebridge UI.",
     "footerDisplay": "",
     "schema": {
         "type": "object",
@@ -14,10 +14,11 @@
                 "default": "KNX"
             },
             "config_path": {
-                "title": "KNX configuration file path. Can be a directory containing multiple (JSON or YAML) files.",
+                "title": "KNX-Konfigurationspfad",
                 "type": "string",
                 "required": true,
-                "default": "/home/pi/.homebridge/knx-config.json"
+                "default": "/home/pi/.homebridge/knx-config.json",
+                "description": "Pfad zur externen JSON/YAML-KNX-Gerätekonfigurationsdatei oder zu einem Verzeichnis. Ein Verzeichnis kann mehrere Konfigurationsdateien enthalten; alle Dateien mit .json-, .yaml- oder .yml-Endung werden geladen."
             },
             "knxconnection": {
                 "title": "Communication method to KNX bus",
@@ -66,5 +67,7 @@
         }
     },
     "form": null,
-    "display": null
+    "display": null,
+    "customUi": true,
+    "customUiPath": "./ui"
 }
