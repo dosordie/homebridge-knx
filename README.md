@@ -1,4 +1,4 @@
-# homebridge-knx v0.5.0-beta.13-dosordie.8
+# homebridge-knx v0.5.1-dosordie.beta.9
 
 Homebridge KNX platform plugin fork with Homebridge 2.x support, custom configuration UI, YAML/JSON config editing, child-bridge friendly setup, and knxjs fixes.
 
@@ -22,6 +22,7 @@ I cannot support the knxd. Please address issues directly at the [knxd issue pag
 ### Installation and running
 - Install homebridge first, from [https://homebridge.io/](https://homebridge.io/); 
 - Once you have your instance running (without any devices yet), go to the `Plugins` tab and type `knx` in the search box
+- The Homebridge plugin list should show the dedicated KNX icon from `ui/public/knx-plugin-icon.svg`. If Homebridge still shows the purple default icon after updating, restart Homebridge UI or clear its plugin metadata cache so the new `package.json` icon URL is fetched from the `main` branch.
 - `homebridge-knx` should be within the top five hits (yes, there are alternatives), please check the name before installing
 - Then put the configuration file *knx_config.json* into `~/.homebridge` (or another folder to your liking, but it should be **readable** and **writable** by user `homebridge` or group `homebridge` which is created by the homebridge installer), and adapt them to your needs (knxd address and some test devices in `knx_config.json`)
 - Eliminate everything (especially all group addresses) that might harm your KNX installation. Sending bus telegrams to your alarm device might wake the neighbourhood unpleasantly!

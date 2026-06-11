@@ -1,6 +1,6 @@
 {
     "name": "homebridge-knx",
-    "version": "0.5.0-beta.13-dosordie.8",
+    "version": "0.5.1-dosordie.beta.9",
     "description": "Homebridge KNX platform plugin fork with Homebridge 2.x support, custom configuration UI, YAML/JSON config editing, and knxjs fixes.",
     "main": "index.js",
     "scripts": {
@@ -89,5 +89,5 @@
         "codemirror": "5.65.20"
     },
     "displayName": "Homebridge KNX",
-    "icon": "https://raw.githubusercontent.com/dosordie/homebridge-knx/master/ui/public/knx-plugin-icon.svg"
+    "icon": "https://raw.githubusercontent.com/dosordie/homebridge-knx/main/ui/public/knx-plugin-icon.svg"
 }
