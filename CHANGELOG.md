@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Add the Rollo-Händler (`RolloHandler`) for absolute KNX shutter positions with configurable inversion, direction-specific travel times, optional estimation (off by default), end-feedback reconciliation and one-shot timeout reads.
+- Include the Rollo Büro configuration, controlled-time HAP/KNX tests and shutdown cleanup. Preserve existing handlers and device identities.
+- Add optional handler write-completion/read-error callbacks to surface transport failures; movement success still requires real position feedback.
 - Fix new accessories with `HKCategory` using the public `api.hap.Categories`.
 - Read cached HAP values through `.value` in cross-service handler lookups. Keep the handler API unchanged.
 - Use public HAP format/permission/unit enums in the custom thermostat and group-address helper.

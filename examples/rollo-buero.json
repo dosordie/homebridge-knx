@@ -1,0 +1,39 @@
+{
+    "Devices": [
+        {
+            "DeviceName": "Rollo Büro",
+            "HKCategory": "WINDOW_COVERING",
+            "Services": [
+                {
+                    "ServiceType": "WindowCovering",
+                    "ServiceName": "Rollo Büro",
+                    "Handler": "RolloHandler",
+                    "Characteristics": [
+                        {
+                            "Type": "CurrentPosition",
+                            "Listen": "3/0/7",
+                            "DPT": "DPT5.001"
+                        },
+                        {
+                            "Type": "TargetPosition",
+                            "Set": "3/0/6",
+                            "Listen": "3/0/6",
+                            "DPT": "DPT5.001"
+                        },
+                        {
+                            "Type": "PositionState"
+                        }
+                    ],
+                    "KNXReadRequests": ["3/0/7"],
+                    "LocalConstants": {
+                        "InvertPosition": true,
+                        "TravelTimeUpMs": 17000,
+                        "TravelTimeDownMs": 17000,
+                        "EstimatePosition": false,
+                        "FeedbackTimeoutMs": 5000
+                    }
+                }
+            ]
+        }
+    ]
+}
