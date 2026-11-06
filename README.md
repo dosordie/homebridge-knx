@@ -21,9 +21,33 @@ Sobald der Fork als reguläres npm-Paket veröffentlicht ist, kann die Installat
 | Komponente | Voraussetzung |
 | --- | --- |
 | Homebridge | `>= 2.0.0` |
-| Node.js | `> 14.0.0` |
+| Node.js | `^22.12.0 \|\| ^24.0.0 \|\| ^26.0.0` |
 | Plugin-Typ | Homebridge Platform Plugin (`KNX`) |
 | KNX-Zugriff | `knxjs` per KNX/IP-Routing oder `knxd` |
+
+## Entwicklung und Tests
+
+```bash
+npm ci
+npm test
+```
+
+`npm test` prüft weiterhin die JavaScript-Syntax und führt zusätzlich Funktionstests
+mit echten HAP-2.x-Klassen aus. Der Homebridge-Host wird an seiner öffentlichen
+API nachgebildet; KNX-Netzwerkzugriffe werden isoliert. Die Tests decken Registrierung,
+Neuanlage mit `HKCategory`, Cache-Wiederherstellung, Service-Wiederverwendung,
+die Thermostat-Characteristic und Wertänderungen ohne KNX-Rückschreiben ab.
+CI prüft Node 22.12.0, 24 und 26. Ein echter KNX-Bus und HomeKit-Pairing sind
+für diese Tests nicht erforderlich und werden dadurch nicht als getestet ausgewiesen.
+
+Die Node-Anforderung entspricht [Homebridge 2.5.0](https://github.com/homebridge/homebridge/blob/v2.5.0/package.json)
+und [HAP-NodeJS 2.3.0](https://github.com/homebridge/HAP-NodeJS/blob/v2.3.0/CHANGELOG.md).
+Node 22 muss mindestens 22.12.0 sein, damit aktuelle ESM-Abhängigkeiten auch aus
+CommonJS geladen werden können. Node 14–20, ältere Node-22-Versionen und ungerade
+Hauptversionen werden nicht unterstützt: Node vor Installation dieses Updates
+aktualisieren. Homebridge bleibt bei mindestens 2.0.0; Homebridge 1.x wird nicht
+unterstützt. Geräte-UUIDs, Service-Subtypes, Seriennummern und Konfigurationen
+werden durch diese Korrekturen nicht migriert; erneutes HomeKit-Pairing ist nicht nötig.
 
 ## Breaking Changes
 
