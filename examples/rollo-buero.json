@@ -30,7 +30,8 @@
                         "TravelTimeUpMs": 17000,
                         "TravelTimeDownMs": 17000,
                         "EstimatePosition": false,
-                        "FeedbackTimeoutMs": 5000
+                        "FeedbackTimeoutMs": 5000,
+                        "CommandDebounceMs": 500
                     }
                 }
             ]

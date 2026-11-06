@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Bundle HomeKit RolloHandler targets with per-device `CommandDebounceMs` (default 500 ms, 0 sends immediately); preserve an active journey until the latest target is sent and cancel pending commands on external targets/shutdown.
+- Supervise RolloHandler journeys for a full directional travel time plus reserve independently of optional partial-way estimation. Preserve KNX write/response metadata and avoid treating stale follow-up read replies as confirmed arrival; freeze the unconfirmed display at final timeout.
+- Update RolloHandler state/cache before immediate HAP acknowledgement through an opt-in, preserving other handlers' callback order. Add controlled-time debounce, metadata, group-command and real HAP event tests and document remaining Home-App display limits.
 - Add the Rollo-Händler (`RolloHandler`) for absolute KNX shutter positions with configurable inversion, direction-specific travel times, optional estimation (off by default), end-feedback reconciliation and one-shot timeout reads.
 - Include the Rollo Büro configuration, controlled-time HAP/KNX tests and shutdown cleanup. Preserve existing handlers and device identities.
 - Add optional handler write-completion/read-error callbacks to surface transport failures; movement success still requires real position feedback.
