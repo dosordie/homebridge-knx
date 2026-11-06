@@ -1,5 +1,7 @@
 #Service Handlers
 
+Der [Rollo-Händler (`RolloHandler`)](docs/RolloHandler.md) ist ein allgemeiner Handler für absolute Rollladenpositionen mit optionaler Schätzung.
+
 ## Purpose
 
 Several functions available in a KNX wired smart home have no 1:1 relation to Apple's homekit world. To allow easy and yet programmatic connections, there is now a little API that makes writing a custom service handler a foreseeable undertaking.
@@ -62,8 +64,9 @@ Returns a local characteristic's value
 - {string} field - The name of the characteristic, like "On" for lightbulb power
 - returns {number} - Dependent on the charceristic's type
 	 
-### this.myAPI.knxWrite(field, value, dptype)
-Writes a value **to the KNX bus**. Requires a "Set" address in the characteristic
+### this.myAPI.knxWrite(field, value, dptype, callback)
+Writes a value **to the KNX bus**. Requires a "Set" address in the characteristic.
+The optional fourth argument `callback(error)` reports transport completion (first error or all writes completed), not physical actuator arrival. Existing three-argument calls remain supported.
 - {string} field - The name of the characteristic, like "On" for lightbulb power
 - {primitive} value - The value to be sent.
 - {string} dptype - Data Point Type like 
@@ -72,6 +75,11 @@ Writes a value **to the KNX bus**. Requires a "Set" address in the characteristi
   -  "DPT1" for boolean
   -  "DPT9" for floating point (2-byte low precision)
 
+
+### this.myAPI.knxReadRequest(field, onError)
+Sends a read request to each `Listen` address. The response arrives through
+`onKNXValueChange`, not through this call. The optional `onError(error)` handles
+knxd socket/read errors; unanswered requests still require handler supervision.
 
 ### this.myAPI.getGlobalValue(device, service, field)
 Returns a characteristic's value from another device/service.

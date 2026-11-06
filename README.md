@@ -224,6 +224,11 @@ Die ausführliche Dokumentation zur KNX-Gerätekonfiguration steht in [knx_confi
 
 ## Add-ins / Handler
 
+Der [Rollo-Händler (`RolloHandler`)](docs/RolloHandler.md) unterstützt absolute
+KNX-Rollladenpositionen mit Rückmeldung am Fahrtende und optionaler Positionsschätzung.
+Eine fertige Konfiguration für „Rollo Büro“ liegt unter
+[examples/rollo-buero.json](examples/rollo-buero.json).
+
 Handler können das Standardverhalten einzelner Services oder Characteristics ändern. Details stehen in [handler-add-in.md](handler-add-in.md).
 
 ## Nützliche Links
