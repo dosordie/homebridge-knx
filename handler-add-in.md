@@ -108,3 +108,18 @@ Get a characteristics property. Used for getting the minValue or maxValue or ste
 *  perms: array of \[Characteristic.Perms\] like [Characteristic.Perms.READ, Characteristic.Perms.WRITE](https://github.com/KhaosT/HAP-NodeJS/blob/master/lib/Characteristic.js#L88)
 
 
+
+## Optional telegram metadata and acknowledgement order
+
+`onKNXValueChange(field, oldValue, newValue, metadata)` can optionally receive
+`metadata.event`: `GroupValue_Write` for spontaneous writes, or
+`GroupValue_Response` for read replies. Both knxjs and knxd preserve this distinction;
+normal characteristics and pseudo KNXObjects forward it. The first three arguments
+and existing handlers remain compatible. There is no request ID correlating a
+response with a particular read operation.
+
+A handler can opt in with `homekitUpdateBeforeAck = true` to perform its synchronous
+HomeKit state/cache update before the write acknowledgement emits HAP changes.
+`RolloHandler` uses this for enqueueing and movement-state ordering. This does not
+wait for debounce timers, network completion or movement. Handlers without the
+opt-in retain the original callback-before-handler order.

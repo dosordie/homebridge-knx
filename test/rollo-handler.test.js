@@ -86,7 +86,8 @@ function fixture(t, { constants = {}, backend = 'knxjs', cached } = {}) {
     config.UUID = hap.uuid.generate('rollo-test');
     config.SerialNumber = 'preserved-rollo-serial';
     config.Services[0].subtype = 'preserved-rollo-service';
-    Object.assign(config.Services[0].LocalConstants, constants);
+    // Original immediate-send scenarios explicitly opt out of batching.
+    Object.assign(config.Services[0].LocalConstants, { CommandDebounceMs: 0 }, constants);
     const device = new KNXDevice(globs, config, cached);
     const service = device.services[0];
     const customAPI = service.customServiceAPI;
@@ -104,10 +105,10 @@ function fixture(t, { constants = {}, backend = 'knxjs', cached } = {}) {
             customAPI.homekitEventCatcher('TargetPosition', value, () => { acknowledged = true; });
             assert.equal(acknowledged, true, 'HomeKit write must be acknowledged synchronously');
         },
-        bus(field, homekitPosition) {
+        bus(field, homekitPosition, metadata) {
             const knxPercent = handler.invert ? 100 - homekitPosition : homekitPosition;
             const wireValue = backend === 'knxjs' ? knxPercent : Math.round(knxPercent * 255 / 100);
-            listeners.get(field === 'CurrentPosition' ? '3/0/7' : '3/0/6')(wireValue, '1.1.1', '');
+            listeners.get(field === 'CurrentPosition' ? '3/0/7' : '3/0/6')(wireValue, '1.1.1', '', metadata);
         },
     };
 }
@@ -285,17 +286,17 @@ test('startup with unknown position never estimates from HAP defaults or cache',
 test('timeout reads once, stops estimates, retains only actual confirmation; late response wins', t => {
     const f = fixture(t, { constants: { EstimatePosition: true, TravelTimeUpMs: 10000, FeedbackTimeoutMs: 2000 } });
     f.bus('CurrentPosition', 20);
-    f.command(80); // 60% * 10 seconds + 2 seconds reserve.
+    f.command(80); // Supervision uses a full 10 seconds + 2 seconds reserve.
     f.clock.advance(6000);
     assert.equal(f.get('CurrentPosition'), 80);
     assert.equal(f.handler.confirmedPosition, 20);
-    f.clock.advance(1999);
+    f.clock.advance(5999);
     assert.equal(f.reads.length, 0);
     f.clock.advance(1);
     assert.deepEqual(f.reads, ['3/0/7']);
     f.clock.advance(2000);
     assert.equal(f.get('PositionState'), 2);
-    assert.equal(f.get('CurrentPosition'), 20, 'unconfirmed display estimate is discarded');
+    assert.equal(f.get('CurrentPosition'), 80, 'unconfirmed display estimate is frozen, not rolled back');
     assert.equal(f.get('TargetPosition'), 80);
     assert.equal(f.handler.confirmedPosition, 20);
     assert.equal(f.handler.positionKnown, false);
@@ -562,7 +563,7 @@ test('with estimates disabled, retargeting still uses elapsed motion for directi
     f.command(20);
     assert.equal(f.handler.motion.start, 30);
     assert.equal(f.get('PositionState'), 0);
-    f.clock.advance(5999); // 10% down * 10s + 5s reserve
+    f.clock.advance(14999); // Full down time 10s + 5s reserve
     assert.equal(f.reads.length, 0);
     f.clock.advance(1);
     assert.equal(f.reads.length, 1);
@@ -593,3 +594,366 @@ test('optional API write callback waits for all addresses, reports one error and
     f.customAPI.knxWrite('TargetPosition', 60, 'DPT5.001', error => { result = error; });
     assert.match(result.message, /No Set address/);
 });
+
+test('default debounce coalesces a slider burst and starts the journey only when sending', t => {
+    const f = fixture(t, { constants: { CommandDebounceMs: undefined, EstimatePosition: true } });
+    assert.equal(f.handler.debounceMs, 500);
+    f.bus('CurrentPosition', 0);
+    f.command(58);
+    f.clock.advance(200);
+    f.command(75);
+    f.clock.advance(200);
+    f.command(72);
+    f.clock.advance(499);
+    assert.equal(f.writes.length, 0);
+    assert.equal(f.handler.motion, undefined);
+    assert.equal(f.handler.ownCommands.length, 0);
+    assert.equal(f.get('CurrentPosition'), 0);
+    f.clock.advance(1);
+    assert.deepEqual(f.writes, [{ address: '3/0/6', dpt: 'DPT5.001', value: 28 }]);
+    assert.equal(f.handler.motion.startedAt, f.clock.now);
+    assert.equal(f.handler.motion.target, 72);
+    assert.equal(f.handler.ownCommands.length, 1);
+    assert.equal(f.get('PositionState'), 1);
+});
+
+test('configurable debounce restarts for identical valid targets; invalid input does not replace pending target', t => {
+    const f = fixture(t, { constants: { CommandDebounceMs: 1200 } });
+    f.command(70);
+    f.clock.advance(1100);
+    f.command(70);
+    f.clock.advance(1100);
+    f.command(NaN);
+    assert.equal(f.writes.length, 0);
+    f.clock.advance(100);
+    assert.equal(f.writes.length, 1);
+    assert.equal(f.writes[0].value, 30);
+    assert.equal(f.handler.motion.startedAt, f.clock.now);
+    assert.equal(f.warnings.length, 1);
+});
+
+test('CommandDebounceMs zero preserves immediate sending and rejects invalid delay settings', t => {
+    const f = fixture(t, { constants: { CommandDebounceMs: 0 } });
+    f.command(50);
+    assert.equal(f.writes.length, 1);
+    assert.equal(f.handler.pendingCommand, undefined);
+    const RolloHandler = require('../lib/addins/RolloHandler');
+    for (const value of [-1, NaN, Infinity, '500', null, 86400001]) {
+        const handler = new RolloHandler({ getLocalConstant: key => key === 'CommandDebounceMs' ? value : undefined });
+        assert.throws(() => handler.onServiceInit(), /CommandDebounceMs/);
+    }
+});
+
+test('old journey continues through the debounce window; reversal uses position at actual send time', t => {
+    const f = fixture(t, { constants: { CommandDebounceMs: 500, EstimatePosition: true, TravelTimeUpMs: 20000 } });
+    f.bus('CurrentPosition', 0);
+    f.command(100);
+    f.clock.advance(500);
+    const old = f.handler.motion;
+    f.clock.advance(5500);
+    f.command(20);
+    assert.equal(f.handler.motion, old);
+    assert.equal(f.get('PositionState'), 1);
+    f.clock.advance(499);
+    assert.equal(f.handler.motion, old);
+    assert.equal(f.writes.length, 1);
+    f.clock.advance(1);
+    assert.equal(f.handler.motion.start, 30);
+    assert.equal(f.get('PositionState'), 0);
+    assert.equal(f.writes.length, 2);
+    assert.equal(f.get('CurrentPosition'), 30);
+});
+
+test('old end-position feedback preserves a newly queued local target', t => {
+    const f = fixture(t, { constants: { CommandDebounceMs: 500 } });
+    f.bus('CurrentPosition', 0);
+    f.command(100);
+    f.clock.advance(500);
+    f.command(40);
+    const pending = f.handler.pendingCommand;
+    f.clock.advance(200);
+    f.bus('CurrentPosition', 100, { event: 'GroupValue_Write' });
+    assert.equal(f.handler.pendingCommand, pending);
+    assert.equal(f.get('CurrentPosition'), 100);
+    assert.equal(f.get('TargetPosition'), 40);
+    assert.equal(f.get('PositionState'), 2);
+    f.clock.advance(300);
+    assert.equal(f.writes.length, 2);
+    assert.equal(f.handler.motion.start, 100);
+    assert.equal(f.handler.motion.target, 40);
+    assert.equal(f.get('PositionState'), 0);
+});
+
+test('external target discards a queued local command without transmitting the external command', t => {
+    const f = fixture(t, { constants: { CommandDebounceMs: 500 } });
+    f.bus('CurrentPosition', 0);
+    f.command(100);
+    f.clock.advance(200);
+    f.bus('TargetPosition', 60, { event: 'GroupValue_Write' });
+    assert.equal(f.handler.pendingCommand, undefined);
+    assert.equal(f.get('TargetPosition'), 60);
+    assert.equal(f.handler.motion.target, 60);
+    f.clock.advance(1000);
+    assert.equal(f.writes.length, 0);
+});
+
+test('own echoes preserve pending commands; only commands actually sent enter echo history', t => {
+    const f = fixture(t, { constants: { CommandDebounceMs: 500 } });
+    f.bus('CurrentPosition', 0);
+    f.command(100);
+    f.clock.advance(500);
+    f.command(50);
+    f.bus('TargetPosition', 100, { event: 'GroupValue_Write' });
+    assert.equal(f.handler.pendingCommand.target, 50);
+    assert.equal(f.handler.ownCommands.length, 1);
+    f.bus('TargetPosition', 50, { event: 'GroupValue_Write' });
+    assert.equal(f.handler.pendingCommand, undefined, 'unsent queued value is an external target, not an own echo');
+    f.clock.advance(500);
+    assert.equal(f.writes.length, 1);
+    assert.equal(f.handler.motion.target, 50);
+});
+
+test('eight independent handlers debounce a group command concurrently, not sequentially', t => {
+    const f = fixture(t, { constants: { CommandDebounceMs: 500 } });
+    const handlers = [f.handler];
+    for (let i = 1; i < 8; i++) {
+        const config = structuredClone(f.config);
+        config.UUID = hap.uuid.generate(`rollo-group-${i}`);
+        config.DeviceName = `Rollo ${i}`;
+        const device = new KNXDevice(f.globs, config);
+        handlers.push(device.services[0].customServiceAPI.handler);
+    }
+    const sentAt = [];
+    t.mock.method(access, 'knxwrite', callback => { sentAt.push(f.clock.now); callback(); });
+    for (const handler of handlers) handler.onHKValueChange('TargetPosition', 0, 80);
+    f.clock.advance(499);
+    assert.equal(sentAt.length, 0);
+    f.clock.advance(1);
+    assert.deepEqual(sentAt, Array(8).fill(100500));
+    assert.equal(f.api.listenerCount('shutdown'), 1);
+    f.api.emit('shutdown');
+    assert.equal(f.clock.pending, 0);
+});
+
+test('shutdown and stale debounce timers cannot transmit queued commands', t => {
+    const f = fixture(t, { constants: { CommandDebounceMs: 500 } });
+    f.command(100);
+    f.command(50);
+    f.api.emit('shutdown');
+    for (const callback of f.clock.cancelled) callback();
+    f.clock.advance(5000);
+    assert.equal(f.writes.length, 0);
+    assert.equal(f.handler.pendingCommand, undefined);
+    assert.equal(f.clock.pending, 0);
+});
+
+for (const backend of ['knxjs', 'knxd']) {
+    test(`${backend}: 58% to closed uses full supervision time; stale query response cannot end the drive`, t => {
+        const f = fixture(t, { backend, constants: { EstimatePosition: true } });
+        f.bus('CurrentPosition', 58);
+        f.command(0);
+        f.clock.advance(10000);
+        assert.equal(f.get('CurrentPosition'), 0);
+        assert.equal(f.get('PositionState'), 0);
+        f.clock.advance(5000);
+        assert.equal(f.reads.length, 0, 'no premature partial-way read after 15 seconds');
+        f.clock.advance(6999);
+        assert.equal(f.reads.length, 0);
+        f.clock.advance(1);
+        assert.equal(f.reads.length, 1, '17 seconds full closing time plus 5 seconds reserve');
+        const motion = f.handler.motion;
+        f.bus('CurrentPosition', 58, { event: 'GroupValue_Response' });
+        assert.equal(f.handler.motion, motion);
+        assert.equal(f.get('CurrentPosition'), 0);
+        assert.equal(f.get('PositionState'), 0);
+        assert.equal(f.handler.confirmedPosition, 58);
+        f.clock.advance(4000);
+        f.bus('CurrentPosition', 0, { event: 'GroupValue_Write' });
+        assert.equal(f.handler.motion, undefined);
+        assert.equal(f.get('CurrentPosition'), 0);
+        assert.equal(f.get('TargetPosition'), 0);
+        assert.equal(f.get('PositionState'), 2);
+        assert.equal(f.handler.confirmedPosition, 0);
+        assert.equal(f.clock.pending, 0);
+        assert.equal(f.writes.length, 1);
+    });
+}
+
+test('actual final write after 19 seconds cancels the later full-time read; no new calibration is assumed', t => {
+    const f = fixture(t, { constants: { EstimatePosition: true } });
+    f.bus('CurrentPosition', 58);
+    f.command(0);
+    f.clock.advance(19000);
+    f.bus('CurrentPosition', 0, { event: 'GroupValue_Write' });
+    f.clock.advance(10000);
+    assert.equal(f.reads.length, 0);
+    assert.equal(f.handler.downMs, 17000);
+    assert.equal(f.get('PositionState'), 2);
+});
+
+test('spontaneous writes remain authoritative, including unchanged and differing final positions', t => {
+    const f = fixture(t, { constants: { EstimatePosition: true } });
+    f.bus('CurrentPosition', 58);
+    f.command(0);
+    f.clock.advance(22000);
+    f.bus('CurrentPosition', 58, { event: 'GroupValue_Write' });
+    assert.equal(f.handler.motion, undefined, 'same starting position can be a genuine failed drive');
+    assert.equal(f.get('CurrentPosition'), 58);
+    assert.equal(f.get('TargetPosition'), 58);
+    f.command(0);
+    f.clock.advance(5000);
+    f.bus('CurrentPosition', 30, { event: 'GroupValue_Write' });
+    assert.equal(f.get('CurrentPosition'), 30);
+    assert.equal(f.get('TargetPosition'), 30);
+    assert.equal(f.get('PositionState'), 2);
+    assert.equal(f.writes.length, 2);
+});
+
+test('read responses near the target can confirm arrival; missing metadata uses only a bounded old-value rule', t => {
+    const f = fixture(t, { constants: { EstimatePosition: true } });
+    f.bus('CurrentPosition', 58);
+    f.command(0);
+    f.clock.advance(22000);
+    f.bus('CurrentPosition', 30, { event: 'GroupValue_Response' });
+    assert.equal(f.handler.motion.queryPending, true, 'partial read response is not an end notification');
+    f.bus('CurrentPosition', 58);
+    assert.equal(f.handler.motion.queryPending, true, 'untyped old value during our query window is ambiguous');
+    f.bus('CurrentPosition', 1, { event: 'GroupValue_Response' });
+    assert.equal(f.handler.motion, undefined);
+    assert.equal(f.get('CurrentPosition'), 1);
+    assert.equal(f.get('TargetPosition'), 1);
+    f.command(0);
+    f.bus('CurrentPosition', 1); // outside the query window, identical values are accepted
+    assert.equal(f.handler.motion, undefined);
+});
+
+test('stale responses cannot extend supervision indefinitely or roll back the displayed estimate', t => {
+    const f = fixture(t, { constants: { EstimatePosition: true } });
+    f.bus('CurrentPosition', 58);
+    f.command(0);
+    f.clock.advance(22000);
+    for (let i = 0; i < 5; i++) {
+        f.bus('CurrentPosition', 58, { event: 'GroupValue_Response' });
+        f.clock.advance(1000);
+    }
+    assert.equal(f.handler.motion, undefined);
+    assert.equal(f.handler.positionKnown, false);
+    assert.equal(f.handler.confirmedPosition, 58);
+    assert.equal(f.get('CurrentPosition'), 0, 'display is frozen; the old response is not manufactured into a new position');
+    assert.equal(f.get('PositionState'), 2);
+    assert.equal(f.warnings.length, 1);
+    assert.equal(f.reads.length, 1);
+    assert.equal(f.clock.pending, 0);
+    f.bus('CurrentPosition', 5, { event: 'GroupValue_Write' });
+    assert.equal(f.get('CurrentPosition'), 5);
+    assert.equal(f.get('TargetPosition'), 5);
+    assert.equal(f.handler.positionKnown, true);
+});
+
+test('unknown direction waits for the longer full travel time', t => {
+    const f = fixture(t, { constants: { TravelTimeUpMs: 1000, TravelTimeDownMs: 3000, FeedbackTimeoutMs: 500 } });
+    f.command(50);
+    f.clock.advance(3499);
+    assert.equal(f.reads.length, 0);
+    f.clock.advance(1);
+    assert.equal(f.reads.length, 1);
+});
+
+test('real HAP values, change order and handler caches keep target separate from current while closing', async t => {
+    const f = fixture(t, { constants: { EstimatePosition: true } });
+    f.bus('CurrentPosition', 58);
+    f.updates.length = 0;
+    const target = f.service.serviceHK.getCharacteristic(hap.Characteristic.TargetPosition);
+    await target.handleSetRequest(0);
+    assert.equal(f.clock.now, 100000, 'write acknowledgement does not wait for travel');
+    assert.equal(f.get('CurrentPosition'), 58);
+    assert.equal(f.customAPI.charValueList.CurrentPosition, 58);
+    assert.equal(f.get('TargetPosition'), 0);
+    assert.equal(f.customAPI.charValueList.TargetPosition, 0);
+    assert.equal(f.get('PositionState'), 0);
+    const stateIndex = f.updates.findIndex(event => event.field === 'PositionState');
+    const targetIndex = f.updates.findIndex(event => event.field === 'TargetPosition');
+    assert.ok(stateIndex >= 0 && stateIndex < targetIndex, 'sent movement state precedes target change');
+    assert.equal(f.updates.some(event => event.field === 'CurrentPosition'), false);
+    f.clock.advance(1000);
+    assert.equal(f.get('CurrentPosition'), 52);
+    assert.equal(f.customAPI.charValueList.CurrentPosition, 52);
+    f.clock.advance(9000);
+    assert.equal(f.get('CurrentPosition'), 0);
+    assert.equal(f.get('PositionState'), 0, 'a modeled closed position does not set STOPPED');
+    assert.equal(f.updates.filter(event => event.field === 'CurrentPosition').every(event => event.context === 'fromKNXBus'), true);
+    f.clock.advance(9000);
+    f.bus('CurrentPosition', 0, { event: 'GroupValue_Write' });
+    assert.equal(f.get('PositionState'), 2);
+    assert.equal(f.writes.length, 1);
+});
+
+test('real HAP write acknowledges immediately while debounce keeps the physical journey pending', async t => {
+    const f = fixture(t, { constants: { CommandDebounceMs: 500, EstimatePosition: true } });
+    f.bus('CurrentPosition', 58);
+    const target = f.service.serviceHK.getCharacteristic(hap.Characteristic.TargetPosition);
+    await target.handleSetRequest(0);
+    assert.equal(f.clock.now, 100000);
+    assert.equal(f.get('CurrentPosition'), 58);
+    assert.equal(f.get('TargetPosition'), 0);
+    assert.equal(f.get('PositionState'), 2);
+    assert.equal(f.handler.motion, undefined);
+    assert.equal(f.writes.length, 0);
+    f.clock.advance(500);
+    assert.equal(f.get('PositionState'), 0);
+    assert.equal(f.get('CurrentPosition'), 58);
+    assert.equal(f.writes.length, 1);
+});
+
+test('handlers without the new acknowledgement opt-in retain the existing callback order', () => {
+    const CustomServiceAPI = require('../lib/customServiceAPI');
+    const order = [];
+    const customAPI = Object.assign(Object.create(CustomServiceAPI.prototype), {
+        handler: { onHKValueChange() { order.push('handler'); } }, charValueList: { On: false },
+    });
+    customAPI.homekitEventCatcher('On', true, () => order.push('ack'));
+    assert.deepEqual(order, ['ack', 'handler']);
+    assert.equal(customAPI.charValueList.On, true);
+});
+
+test('metadata also reaches handlers through pseudo KNX objects without changing values', t => {
+    const f = fixture(t);
+    f.customAPI.addPseudoCharacteristic('ExtraPosition', undefined, '3/0/8', 'DPT5.001');
+    const received = [];
+    t.mock.method(f.handler, 'onKNXValueChange', (...args) => received.push(args));
+    f.customAPI.knxbusEventCatcher('ExtraPosition', 25, '1.1.2', '3/0/8', { event: 'GroupValue_Response' });
+    assert.deepEqual(received, [['ExtraPosition', null, 25, { event: 'GroupValue_Response' }]]);
+    assert.equal(f.customAPI.charValueList.ExtraPosition, 25);
+});
+
+test('typed stale responses from startup or another reader cannot prematurely confirm an active journey', t => {
+    const f = fixture(t, { constants: { EstimatePosition: true } });
+    f.bus('CurrentPosition', 58, { event: 'GroupValue_Response' });
+    f.command(0);
+    f.clock.advance(3000);
+    const motion = f.handler.motion;
+    const displayed = f.get('CurrentPosition');
+    f.bus('CurrentPosition', 58, { event: 'GroupValue_Response' });
+    assert.equal(f.handler.motion, motion);
+    assert.equal(f.get('CurrentPosition'), displayed);
+    assert.equal(f.get('PositionState'), 0);
+    f.bus('CurrentPosition', 58, { event: 'GroupValue_Write' });
+    assert.equal(f.handler.motion, undefined);
+    assert.equal(f.get('CurrentPosition'), 58);
+});
+
+for (const active of [false, true]) {
+    test(`external repeated ${active ? 'active' : 'confirmed idle'} target still cancels a newer unsent local command`, t => {
+        const f = fixture(t, { constants: { CommandDebounceMs: 500 } });
+        f.bus('CurrentPosition', active ? 0 : 80);
+        if (active) f.bus('TargetPosition', 80, { event: 'GroupValue_Write' });
+        const motion = f.handler.motion;
+        f.command(40);
+        f.bus('TargetPosition', 80, { event: 'GroupValue_Write' });
+        assert.equal(f.handler.pendingCommand, undefined);
+        assert.equal(f.handler.motion, motion);
+        assert.equal(f.get('TargetPosition'), 80);
+        f.clock.advance(1000);
+        assert.equal(f.writes.length, 0);
+    });
+}
