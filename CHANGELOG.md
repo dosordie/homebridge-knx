@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+- Fix new accessories with `HKCategory` using the public `api.hap.Categories`.
+- Read cached HAP values through `.value` in cross-service handler lookups. Keep the handler API unchanged.
+- Use public HAP format/permission/unit enums in the custom thermostat and group-address helper.
+- Require Node `^22.12.0 || ^24.0.0 || ^26.0.0`; update Node before installing if outside this range. Homebridge remains `>=2.0.0`. No identity, serial-number, subtype or pairing migration.
+- Add real HAP functional tests and a Node 22/24/26 CI matrix alongside syntax checks.
+- Repair missing UI/KNX lock metadata and pin the KNX Git resolution; add HAP 2.3.0 as a test dependency.
+
 ## 0.5.1-dosordie.beta.9
 - Switch package versioning to the `dosordie.beta` prerelease format for the next main merge.
 - Point Homebridge metadata at the text-based SVG icon on the `main` branch so the plugin list no longer falls back to the default Homebridge logo.

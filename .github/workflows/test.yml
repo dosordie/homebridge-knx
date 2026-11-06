@@ -1,0 +1,23 @@
+name: Test
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22.12.0', '24', '26']
+        hap: ['2.3.0']
+        include:
+          - node: '24'
+            hap: '2.0.0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - if: matrix.hap != '2.3.0'
+        run: npm install --no-save --package-lock=false @homebridge/hap-nodejs@${{ matrix.hap }}
+      - run: npm test
